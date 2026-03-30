@@ -47,6 +47,10 @@ func main() {
 	if sshPort == "" {
 		sshPort = "22"
 	}
+	if configPath == "" {
+		configPath = "/etc/mihomo/config.yaml"
+	}
+
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
@@ -100,6 +104,22 @@ func getConfig(c *gin.Context) {
 	}
 
 	rules, groups := parseConfigNode(&node)
+
+	// ДОБАВЛЯЕМ СИСТЕМНЫЕ ГРУППЫ, которых нет в секции proxy-groups
+	systemGroups := []string{"DIRECT", "REJECT", "PASS", "BLOCK"}
+	for _, sg := range systemGroups {
+		found := false
+		for _, g := range groups {
+			if g == sg {
+				found = true
+				break
+			}
+		}
+		if !found {
+			groups = append(groups, sg)
+		}
+	}
+
 	c.JSON(200, ConfigResponse{Rules: rules, ProxyGroups: groups})
 }
 
@@ -128,14 +148,16 @@ func parseConfigNode(node *yaml.Node) ([]Rule, []string) {
 
 		if keyNode.Value == "rules" {
 			for _, rNode := range valNode.Content {
-				// Обработка комментариев перед правилом как закомментированных правил
+				// Обработка закомментированных правил в HeadComment
 				if rNode.HeadComment != "" {
 					lines := strings.Split(rNode.HeadComment, "\n")
 					for _, line := range lines {
-						content := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "#"))
-						if strings.HasPrefix(content, "-") {
-							ruleRaw := strings.TrimSpace(strings.TrimPrefix(content, "-"))
-							if ruleRaw != "" {
+						cleanLine := strings.TrimSpace(line)
+						if strings.HasPrefix(cleanLine, "#") {
+							content := strings.TrimSpace(strings.TrimPrefix(cleanLine, "#"))
+							// Если строка внутри комментария похожа на правило (начинается с типа или - )
+							ruleRaw := strings.TrimPrefix(content, "- ")
+							if isLikelyRule(ruleRaw) {
 								rule := parseSingleRule(ruleRaw)
 								rule.ID = len(rules)
 								rule.Enabled = false
@@ -157,10 +179,26 @@ func parseConfigNode(node *yaml.Node) ([]Rule, []string) {
 	return rules, groups
 }
 
+func isLikelyRule(s string) bool {
+	// Простая проверка, является ли строка правилом Clash
+	types := []string{"DOMAIN", "GEOSITE", "GEOIP", "IP-CIDR", "MATCH", "OR", "AND", "NOT", "RULE-SET"}
+	for _, t := range types {
+		if strings.HasPrefix(s, t) {
+			return true
+		}
+	}
+	return false
+}
+
 func parseSingleRule(raw string) Rule {
 	trimmed := strings.TrimSpace(raw)
 	parts := splitOutsideParentheses(trimmed)
 	rule := Rule{Raw: raw}
+
+	// Очищаем сегменты
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
 
 	switch len(parts) {
 	case 1:
@@ -175,10 +213,11 @@ func parseSingleRule(raw string) Rule {
 		rule.ProxyGroup = parts[2]
 	default:
 		if len(parts) >= 4 {
+			// Кейс: GEOIP,private,DIRECT,no-resolve
+			// Берем только первые три части, no-resolve откидываем
 			rule.Type = parts[0]
 			rule.Value = parts[1]
-			// Собираем группу и опции (например, DIRECT,no-resolve) вместе
-			rule.ProxyGroup = strings.Join(parts[2:], ",")
+			rule.ProxyGroup = parts[2]
 		}
 	}
 	return rule
@@ -195,13 +234,13 @@ func splitOutsideParentheses(s string) []string {
 			balance--
 		}
 		if r == ',' && balance == 0 {
-			result = append(result, strings.TrimSpace(current.String()))
+			result = append(result, current.String())
 			current.Reset()
 		} else {
 			current.WriteRune(r)
 		}
 	}
-	result = append(result, strings.TrimSpace(current.String()))
+	result = append(result, current.String())
 	return result
 }
 
@@ -237,8 +276,7 @@ func saveRules(c *gin.Context) {
 			rulesSeq := root.Content[i+1]
 			rulesSeq.Content = nil
 			for _, ur := range updatedRules {
-				// Пересобираем строку правила
-				line := ""
+				var line string
 				if ur.Value != "" {
 					line = fmt.Sprintf("%s,%s,%s", ur.Type, ur.Value, ur.ProxyGroup)
 				} else if ur.Type != ur.ProxyGroup {

@@ -61,8 +61,8 @@ func main() {
 		c.Data(200, "text/html; charset=utf-8", file)
 	})
 
-	log.Printf("🚀 Приложение запущено на :8080")
-	r.Run(":8080")
+	log.Printf("🚀 Приложение запущено на :8050")
+	r.Run(":8050")
 }
 
 func getSSHClient() (*ssh.Client, error) {

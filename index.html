@@ -41,6 +41,11 @@
                                 <option>DOMAIN</option>
                                 <option>IP-CIDR</option>
                                 <option>GEOIP</option>
+                                <option>GEOSITE</option>
+                                <option>IP-ASN</option>
+                                <option>RULE-SET</option>
+                                <option>AND</option>
+                                <option>OR</option>
                                 <option>MATCH</option>
                                 <option>OTHER</option>
                             </select>
@@ -107,8 +112,11 @@
                 },
                 updateRaw(index) {
                     const r = this.rules[index]
-                    if (r.type !== 'OTHER') {
-                        r.raw = `${r.type},${r.value},${r.proxy_group}`
+                    if (r.type === 'MATCH') {
+                        r.raw = `${r.type},${r.proxy_group}`
+                    } else if (r.type !== 'OTHER') {
+                        const val = r.value ? r.value + ',' : ''
+                        r.raw = `${r.type},${val}${r.proxy_group}`
                     }
                 },
                 async saveConfig() {

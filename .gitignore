@@ -7,3 +7,5 @@ go.sum
 
 # OS files
 .DS_Store
+
+.idea/

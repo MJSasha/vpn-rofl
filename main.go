@@ -74,7 +74,7 @@ func getSSHClient() (*ssh.Client, error) {
 func getConfig(c *gin.Context) {
 	client, err := getSSHClient()
 	if err != nil {
-		c.JSON(500, gin.H{"error": "SSH Connection failed: " + err.Error()})
+		c.JSON(500, gin.H{"error": "SSH failed: " + err.Error()})
 		return
 	}
 	defer client.Close()
@@ -127,31 +127,82 @@ func parseConfigNode(node *yaml.Node) ([]Rule, []string) {
 		}
 
 		if keyNode.Value == "rules" {
-			for idx, rNode := range valNode.Content {
-				raw := rNode.Value
-				enabled := true
-
-				// Обработка закомментированных правил через HeadComment
-				if rNode.Value == "" && rNode.HeadComment != "" {
-					enabled = false
-					raw = strings.TrimSpace(strings.TrimPrefix(rNode.HeadComment, "#"))
+			for _, rNode := range valNode.Content {
+				// Обработка комментариев перед правилом как закомментированных правил
+				if rNode.HeadComment != "" {
+					lines := strings.Split(rNode.HeadComment, "\n")
+					for _, line := range lines {
+						content := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "#"))
+						if strings.HasPrefix(content, "-") {
+							ruleRaw := strings.TrimSpace(strings.TrimPrefix(content, "-"))
+							if ruleRaw != "" {
+								rule := parseSingleRule(ruleRaw)
+								rule.ID = len(rules)
+								rule.Enabled = false
+								rules = append(rules, rule)
+							}
+						}
+					}
 				}
 
-				parts := strings.Split(raw, ",")
-				rule := Rule{ID: idx, Enabled: enabled, Raw: raw}
-				if len(parts) >= 3 {
-					rule.Type = parts[0]
-					rule.Value = parts[1]
-					rule.ProxyGroup = parts[2]
-				} else {
-					rule.Type = "MATCH/OTHER"
-					rule.Value = raw
+				if rNode.Value != "" {
+					rule := parseSingleRule(rNode.Value)
+					rule.ID = len(rules)
+					rule.Enabled = true
+					rules = append(rules, rule)
 				}
-				rules = append(rules, rule)
 			}
 		}
 	}
 	return rules, groups
+}
+
+func parseSingleRule(raw string) Rule {
+	trimmed := strings.TrimSpace(raw)
+	parts := splitOutsideParentheses(trimmed)
+	rule := Rule{Raw: raw}
+
+	switch len(parts) {
+	case 1:
+		rule.Type = parts[0]
+		rule.ProxyGroup = parts[0]
+	case 2:
+		rule.Type = parts[0]
+		rule.ProxyGroup = parts[1]
+	case 3:
+		rule.Type = parts[0]
+		rule.Value = parts[1]
+		rule.ProxyGroup = parts[2]
+	default:
+		if len(parts) >= 4 {
+			rule.Type = parts[0]
+			rule.Value = parts[1]
+			// Собираем группу и опции (например, DIRECT,no-resolve) вместе
+			rule.ProxyGroup = strings.Join(parts[2:], ",")
+		}
+	}
+	return rule
+}
+
+func splitOutsideParentheses(s string) []string {
+	var result []string
+	var current strings.Builder
+	balance := 0
+	for _, r := range s {
+		if r == '(' {
+			balance++
+		} else if r == ')' {
+			balance--
+		}
+		if r == ',' && balance == 0 {
+			result = append(result, strings.TrimSpace(current.String()))
+			current.Reset()
+		} else {
+			current.WriteRune(r)
+		}
+	}
+	result = append(result, strings.TrimSpace(current.String()))
+	return result
 }
 
 func saveRules(c *gin.Context) {
@@ -175,36 +226,43 @@ func saveRules(c *gin.Context) {
 	}
 	defer sftpClient.Close()
 
-	// Читаем текущий файл для сохранения структуры
 	fRead, _ := sftpClient.Open(configPath)
 	var node yaml.Node
 	yaml.NewDecoder(fRead).Decode(&node)
 	fRead.Close()
 
-	// Обновляем секцию rules
 	root := node.Content[0]
 	for i := 0; i < len(root.Content); i += 2 {
 		if root.Content[i].Value == "rules" {
 			rulesSeq := root.Content[i+1]
 			rulesSeq.Content = nil
 			for _, ur := range updatedRules {
+				// Пересобираем строку правила
+				line := ""
+				if ur.Value != "" {
+					line = fmt.Sprintf("%s,%s,%s", ur.Type, ur.Value, ur.ProxyGroup)
+				} else if ur.Type != ur.ProxyGroup {
+					line = fmt.Sprintf("%s,%s", ur.Type, ur.ProxyGroup)
+				} else {
+					line = ur.Type
+				}
+
 				newNode := &yaml.Node{Kind: yaml.ScalarNode}
 				if ur.Enabled {
-					newNode.Value = ur.Raw
+					newNode.Value = line
 				} else {
-					newNode.Value = ""                  // Оставляем значение пустым
-					newNode.HeadComment = "# " + ur.Raw // Уводим в комментарий
+					newNode.Value = ""
+					newNode.HeadComment = "# " + line
 				}
 				rulesSeq.Content = append(rulesSeq.Content, newNode)
 			}
 		}
 	}
 
-	// Записываем
 	var buf bytes.Buffer
-	encoder := yaml.NewEncoder(&buf)
-	encoder.SetIndent(2)
-	encoder.Encode(&node)
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	enc.Encode(&node)
 
 	fWrite, _ := sftpClient.Create(configPath)
 	fWrite.Write(buf.Bytes())
@@ -215,10 +273,13 @@ func saveRules(c *gin.Context) {
 }
 
 func triggerMihomo() {
+	if mihomoAPI == "" {
+		return
+	}
 	url := fmt.Sprintf("%s/configs?force=true", mihomoAPI)
 	body := map[string]string{"path": configPath}
-	jsonBody, _ := json.Marshal(body)
-	req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(jsonBody))
+	jb, _ := json.Marshal(body)
+	req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(jb))
 	req.Header.Set("Content-Type", "application/json")
 	http.DefaultClient.Do(req)
 }

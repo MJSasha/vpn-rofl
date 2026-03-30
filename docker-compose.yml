@@ -8,6 +8,6 @@ services:
       - SSH_PORT=222
       - SSH_USER=root
       - SSH_PASS=keenetic
-      - CONFIG_PATH=/opt/etc/xkeen/mihomo/config.yaml
+      - CONFIG_PATH=/opt/etc/mihomo/config.yaml
       - MIHOMO_API=http://192.168.1.1:9090
     restart: unless-stopped

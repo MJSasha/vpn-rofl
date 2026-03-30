@@ -5,7 +5,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -27,7 +26,7 @@ type Rule struct {
 	Value      string `json:"value"`
 	ProxyGroup string `json:"proxy_group"`
 	Enabled    bool   `json:"enabled"`
-	Raw        string `json:"raw"` // Full string for complex rules
+	Raw        string `json:"raw"`
 }
 
 type ConfigResponse struct {
@@ -40,79 +39,63 @@ var (
 	sshPort    = os.Getenv("SSH_PORT")
 	sshUser    = os.Getenv("SSH_USER")
 	sshPass    = os.Getenv("SSH_PASS")
-	configPath = os.Getenv("CONFIG_PATH") // e.g. /opt/etc/xkeen/config.yaml
-	mihomoAPI  = os.Getenv("MIHOMO_API")  // e.g. http://192.168.1.1:9090
+	configPath = os.Getenv("CONFIG_PATH")
+	mihomoAPI  = os.Getenv("MIHOMO_API")
 )
 
 func main() {
 	if sshPort == "" {
 		sshPort = "22"
 	}
-
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
-	// API Endpoints
 	r.GET("/api/config", getConfig)
 	r.POST("/api/rules", saveRules)
-
-	// Frontend
 	r.GET("/", func(c *gin.Context) {
-		file, err := f.ReadFile("index.html")
-		if err != nil {
-			c.String(500, "Internal Server Error: index.html not found")
-			return
-		}
+		file, _ := f.ReadFile("index.html")
 		c.Data(200, "text/html; charset=utf-8", file)
 	})
 
-	log.Printf("Server started on :8080")
+	log.Printf("🚀 Приложение запущено на :8080")
 	r.Run(":8080")
 }
 
 func getSSHClient() (*ssh.Client, error) {
 	config := &ssh.ClientConfig{
-		User: sshUser,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(sshPass),
-		},
+		User:            sshUser,
+		Auth:            []ssh.AuthMethod{ssh.Password(sshPass)},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         5 * time.Second,
+		Timeout:         10 * time.Second,
 	}
 	return ssh.Dial("tcp", fmt.Sprintf("%s:%s", sshHost, sshPort), config)
 }
 
 func getConfig(c *gin.Context) {
-	if sshHost == "" || sshUser == "" || sshPass == "" || configPath == "" {
-		c.JSON(500, gin.H{"error": "Environment variables (SSH_HOST, SSH_USER, etc.) are not set in docker-compose.yml"})
-		return
-	}
-
 	client, err := getSSHClient()
 	if err != nil {
-		log.Printf("SSH connection failed: %v", err)
-		c.JSON(500, gin.H{"error": "SSH connection failed: " + err.Error()})
+		c.JSON(500, gin.H{"error": "SSH Connection failed: " + err.Error()})
 		return
 	}
 	defer client.Close()
 
 	sftpClient, err := sftp.NewClient(client)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "SFTP failed: " + err.Error()})
+		c.JSON(500, gin.H{"error": "SFTP failed"})
 		return
 	}
 	defer sftpClient.Close()
 
 	file, err := sftpClient.Open(configPath)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "Could not open config: " + err.Error()})
+		c.JSON(500, gin.H{"error": "File not found"})
 		return
 	}
 	defer file.Close()
 
 	var node yaml.Node
-	decoder := yaml.NewDecoder(file)
-	if err := decoder.Decode(&node); err != nil {
-		c.JSON(500, gin.H{"error": "YAML parse failed: " + err.Error()})
+	if err := yaml.NewDecoder(file).Decode(&node); err != nil {
+		c.JSON(500, gin.H{"error": "YAML Error"})
 		return
 	}
 
@@ -130,11 +113,11 @@ func parseConfigNode(node *yaml.Node) ([]Rule, []string) {
 
 	root := node.Content[0]
 	for i := 0; i < len(root.Content); i += 2 {
-		key := root.Content[i].Value
-		val := root.Content[i+1]
+		keyNode := root.Content[i]
+		valNode := root.Content[i+1]
 
-		if key == "proxy-groups" {
-			for _, g := range val.Content {
+		if keyNode.Value == "proxy-groups" {
+			for _, g := range valNode.Content {
 				for j := 0; j < len(g.Content); j += 2 {
 					if g.Content[j].Value == "name" {
 						groups = append(groups, g.Content[j+1].Value)
@@ -143,27 +126,25 @@ func parseConfigNode(node *yaml.Node) ([]Rule, []string) {
 			}
 		}
 
-		if key == "rules" {
-			for idx, rNode := range val.Content {
+		if keyNode.Value == "rules" {
+			for idx, rNode := range valNode.Content {
 				raw := rNode.Value
 				enabled := true
-				if strings.HasPrefix(raw, "# ") {
+
+				// Обработка закомментированных правил через HeadComment
+				if rNode.Value == "" && rNode.HeadComment != "" {
 					enabled = false
-					raw = strings.TrimPrefix(raw, "# ")
+					raw = strings.TrimSpace(strings.TrimPrefix(rNode.HeadComment, "#"))
 				}
 
 				parts := strings.Split(raw, ",")
-				rule := Rule{
-					ID:      idx,
-					Enabled: enabled,
-					Raw:     raw,
-				}
+				rule := Rule{ID: idx, Enabled: enabled, Raw: raw}
 				if len(parts) >= 3 {
 					rule.Type = parts[0]
 					rule.Value = parts[1]
 					rule.ProxyGroup = parts[2]
 				} else {
-					rule.Type = "OTHER"
+					rule.Type = "MATCH/OTHER"
 					rule.Value = raw
 				}
 				rules = append(rules, rule)
@@ -174,8 +155,8 @@ func parseConfigNode(node *yaml.Node) ([]Rule, []string) {
 }
 
 func saveRules(c *gin.Context) {
-	var newRules []Rule
-	if err := c.ShouldBindJSON(&newRules); err != nil {
+	var updatedRules []Rule
+	if err := c.ShouldBindJSON(&updatedRules); err != nil {
 		c.JSON(400, gin.H{"error": "Invalid data"})
 		return
 	}
@@ -194,58 +175,42 @@ func saveRules(c *gin.Context) {
 	}
 	defer sftpClient.Close()
 
-	// 1. Read existing to preserve structure
-	file, err := sftpClient.Open(configPath)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Could not open config for reading: " + err.Error()})
-		return
-	}
+	// Читаем текущий файл для сохранения структуры
+	fRead, _ := sftpClient.Open(configPath)
 	var node yaml.Node
-	err = yaml.NewDecoder(file).Decode(&node)
-	file.Close()
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Could not decode YAML: " + err.Error()})
-		return
-	}
+	yaml.NewDecoder(fRead).Decode(&node)
+	fRead.Close()
 
-	// 2. Update rules in node
-	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
-		root := node.Content[0]
-		for i := 0; i < len(root.Content); i += 2 {
-			if root.Content[i].Value == "rules" {
-				rulesSeq := root.Content[i+1]
-				rulesSeq.Content = nil // Clear existing
-				for _, nr := range newRules {
-					val := nr.Raw
-					if !nr.Enabled {
-						val = "# " + val
-					}
-					rulesSeq.Content = append(rulesSeq.Content, &yaml.Node{
-						Kind:  yaml.ScalarNode,
-						Value: val,
-					})
+	// Обновляем секцию rules
+	root := node.Content[0]
+	for i := 0; i < len(root.Content); i += 2 {
+		if root.Content[i].Value == "rules" {
+			rulesSeq := root.Content[i+1]
+			rulesSeq.Content = nil
+			for _, ur := range updatedRules {
+				newNode := &yaml.Node{Kind: yaml.ScalarNode}
+				if ur.Enabled {
+					newNode.Value = ur.Raw
+				} else {
+					newNode.Value = ""                  // Оставляем значение пустым
+					newNode.HeadComment = "# " + ur.Raw // Уводим в комментарий
 				}
+				rulesSeq.Content = append(rulesSeq.Content, newNode)
 			}
 		}
 	}
 
-	// 3. Write back
-	output, err := yaml.Marshal(&node)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Could not marshal YAML: " + err.Error()})
-		return
-	}
-	fWrite, err := sftpClient.Create(configPath)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Could not create config for writing: " + err.Error()})
-		return
-	}
-	fWrite.Write(output)
+	// Записываем
+	var buf bytes.Buffer
+	encoder := yaml.NewEncoder(&buf)
+	encoder.SetIndent(2)
+	encoder.Encode(&node)
+
+	fWrite, _ := sftpClient.Create(configPath)
+	fWrite.Write(buf.Bytes())
 	fWrite.Close()
 
-	// 4. Trigger Mihomo reload
 	go triggerMihomo()
-
 	c.JSON(200, gin.H{"status": "ok"})
 }
 
@@ -253,13 +218,7 @@ func triggerMihomo() {
 	url := fmt.Sprintf("%s/configs?force=true", mihomoAPI)
 	body := map[string]string{"path": configPath}
 	jsonBody, _ := json.Marshal(body)
-	
 	req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
-	
-	resp, err := http.DefaultClient.Do(req)
-	if err == nil {
-		defer resp.Body.Close()
-		io.ReadAll(resp.Body)
-	}
+	http.DefaultClient.Do(req)
 }

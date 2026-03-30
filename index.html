@@ -41,18 +41,25 @@
                     </button>
                 </div>
 
-                <div class="relative min-w-[220px]">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                <div class="flex gap-2">
+                    <div class="relative min-w-[220px]">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        </div>
+                        <select v-model="selectedGroup" 
+                                class="block w-full pl-11 pr-10 h-[52px] border border-slate-200 rounded-2xl leading-5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm transition-all text-sm appearance-none cursor-pointer text-slate-600 font-medium">
+                            <option value="">Все группы</option>
+                            <option v-for="g in proxyGroups" :key="g" :value="g">{{g}}</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
                     </div>
-                    <select v-model="selectedGroup" 
-                            class="block w-full pl-11 pr-10 h-[52px] border border-slate-200 rounded-2xl leading-5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm transition-all text-sm appearance-none cursor-pointer text-slate-600 font-medium">
-                        <option value="">Все группы</option>
-                        <option v-for="g in proxyGroups" :key="g" :value="g">{{g}}</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
+                    <button @click="addGroup" 
+                            class="flex items-center justify-center w-[52px] h-[52px] bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-600 rounded-2xl shadow-sm transition-all group/add"
+                            title="Добавить новую группу">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover/add:scale-110 transition-transform"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
                 </div>
             </div>
             
@@ -145,7 +152,10 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <input type="text" v-model="rule.value" @input="updateRawByRule(rule)" 
+                                <template v-if="rule.type === 'MATCH'">
+                                    <span class="text-xs font-medium text-slate-400 italic px-1">Весь остальной трафик</span>
+                                </template>
+                                <input v-else type="text" v-model="rule.value" @input="updateRawByRule(rule)" 
                                        :placeholder="valuePlaceholders[rule.type] || 'example.com'"
                                        class="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-400 border-dashed text-sm focus:ring-0 p-1 text-slate-600 placeholder-slate-300 transition-all">
                             </td>
@@ -161,10 +171,22 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-center">
-                                <button @click="removeRule(rule)" 
-                                        class="text-slate-300 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
+                                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                    <button @click="moveRule(index, -1)" 
+                                            :disabled="index === 0 || rule.type === 'MATCH'"
+                                            class="text-slate-300 hover:text-blue-500 p-1.5 rounded-lg hover:bg-blue-50 transition-all disabled:opacity-30 disabled:hover:bg-transparent">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                    </button>
+                                    <button @click="moveRule(index, 1)" 
+                                            :disabled="index >= filteredRules.length - 1 || rule.type === 'MATCH' || filteredRules[index+1].type === 'MATCH'"
+                                            class="text-slate-300 hover:text-blue-500 p-1.5 rounded-lg hover:bg-blue-50 transition-all disabled:opacity-30 disabled:hover:bg-transparent">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </button>
+                                    <button @click="removeRule(rule)" 
+                                            class="text-slate-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <tr v-if="filteredRules.length === 0" class="text-center py-10">
@@ -230,6 +252,7 @@
                     searchQuery: '',
                     selectedGroup: '',
                     originalRulesJson: '[]',
+                    originalGroupsJson: '[]',
                     hasChanges: false,
                     sortKey: '',
                     sortOrder: 1,
@@ -263,9 +286,11 @@
             },
             watch: {
                 rules: {
-                    handler(newVal) {
-                        this.hasChanges = JSON.stringify(newVal) !== this.originalRulesJson
-                    },
+                    handler() { this.checkChanges() },
+                    deep: true
+                },
+                proxyGroups: {
+                    handler() { this.checkChanges() },
                     deep: true
                 }
             },
@@ -306,6 +331,10 @@
                 }
             },
             methods: {
+                checkChanges() {
+                    this.hasChanges = JSON.stringify(this.rules) !== this.originalRulesJson || 
+                                     JSON.stringify(this.proxyGroups) !== this.originalGroupsJson
+                },
                 sortBy(key) {
                     if (this.sortKey === key) {
                         this.sortOrder *= -1
@@ -317,19 +346,60 @@
                 toggleAll(status) {
                     this.rules.forEach(r => r.enabled = status)
                 },
-                async fetchConfig() {
+                fetchConfig() {
                     this.loading = true
-                    try {
-                        const res = await fetch('/api/config')
-                        const data = await res.json()
-                        this.rules = data.rules
-                        this.proxyGroups = data.proxy_groups
-                        this.originalRulesJson = JSON.stringify(this.rules)
-                        this.hasChanges = false
-                    } catch (err) {
-                        alert('Ошибка загрузки: ' + err)
-                    } finally {
-                        this.loading = false
+                    fetch('/api/config')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.rules = data.rules
+                            this.proxyGroups = data.proxy_groups
+                            this.ensureMatchAtEnd()
+                            this.originalRulesJson = JSON.stringify(this.rules)
+                            this.originalGroupsJson = JSON.stringify(this.proxyGroups)
+                            this.hasChanges = false
+                        })
+                        .catch(err => alert('Ошибка загрузки: ' + err))
+                        .finally(() => this.loading = false)
+                },
+                ensureMatchAtEnd() {
+                    const matchRules = this.rules.filter(r => r.type === 'MATCH')
+                    const otherRules = this.rules.filter(r => r.type !== 'MATCH')
+                    this.rules = [...otherRules, ...matchRules]
+                },
+                moveRule(index, direction) {
+                    // This index is from filteredRules
+                    const ruleToMove = this.filteredRules[index]
+                    const targetIndex = index + direction
+                    
+                    if (targetIndex < 0 || targetIndex >= this.filteredRules.length) return
+                    
+                    const otherRule = this.filteredRules[targetIndex]
+                    
+                    // Don't move MATCH rules or move above MATCH rules
+                    if (ruleToMove.type === 'MATCH' || otherRule.type === 'MATCH') return
+
+                    // Find real indices in the main rules array
+                    const realIndex1 = this.rules.findIndex(r => r.id === ruleToMove.id)
+                    const realIndex2 = this.rules.findIndex(r => r.id === otherRule.id)
+
+                    if (realIndex1 !== -1 && realIndex2 !== -1) {
+                        const temp = this.rules[realIndex1]
+                        this.rules[realIndex1] = this.rules[realIndex2]
+                        this.rules[realIndex2] = temp
+                        // We need to trigger reactivity
+                        this.rules = [...this.rules]
+                        this.sortKey = '' // Reset sorting when manually moving
+                    }
+                },
+                addGroup() {
+                    const name = prompt('Введите название новой группы:')
+                    if (name) {
+                        const trimmed = name.trim()
+                        if (trimmed && !this.proxyGroups.includes(trimmed)) {
+                            this.proxyGroups.push(trimmed)
+                        } else if (trimmed) {
+                            alert('Такая группа уже существует!')
+                        }
                     }
                 },
                 addRule() {
@@ -344,7 +414,14 @@
                         raw: ''
                     }
                     this.updateRawByRule(newRule)
-                    this.rules.push(newRule)
+                    
+                    // Insert before the first MATCH rule or at the end
+                    const matchIndex = this.rules.findIndex(r => r.type === 'MATCH')
+                    if (matchIndex !== -1) {
+                        this.rules.splice(matchIndex, 0, newRule)
+                    } else {
+                        this.rules.push(newRule)
+                    }
                 },
                 removeRule(rule) {
                     if (confirm('Удалить это правило?')) {
@@ -354,6 +431,7 @@
                 },
                 updateRawByRule(rule) {
                     if (rule.type === 'MATCH') {
+                        this.ensureMatchAtEnd()
                         rule.raw = `${rule.type},${rule.proxy_group}`
                     } else if (rule.type !== 'OTHER') {
                         const val = rule.value ? rule.value + ',' : ''
@@ -366,12 +444,15 @@
                         const res = await fetch('/api/rules', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify(this.rules)
+                            body: JSON.stringify({
+                                rules: this.rules,
+                                proxy_groups: this.proxyGroups
+                            })
                         })
                         if (res.ok) {
                             this.originalRulesJson = JSON.stringify(this.rules)
+                            this.originalGroupsJson = JSON.stringify(this.proxyGroups)
                             this.hasChanges = false
-                            // Small toast would be better but alert is fine for now
                             alert('Сохранено и применено!')
                         } else {
                             const data = await res.json()

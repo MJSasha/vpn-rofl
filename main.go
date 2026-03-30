@@ -245,10 +245,28 @@ func splitOutsideParentheses(s string) []string {
 }
 
 func saveRules(c *gin.Context) {
-	var updatedRules []Rule
-	if err := c.ShouldBindJSON(&updatedRules); err != nil {
-		c.JSON(400, gin.H{"error": "Invalid data"})
+	// Читаем тело запроса один раз
+	bodyBytes, err := c.GetRawData()
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to read request"})
 		return
+	}
+
+	var req struct {
+		Rules       []Rule   `json:"rules"`
+		ProxyGroups []string `json:"proxy_groups"`
+	}
+
+	// Пробуем новый формат
+	if err := json.Unmarshal(bodyBytes, &req); err != nil || len(req.Rules) == 0 {
+		// Если не вышло, пробуем старый формат (просто массив правил)
+		var legacyRules []Rule
+		if errLegacy := json.Unmarshal(bodyBytes, &legacyRules); errLegacy == nil {
+			req.Rules = legacyRules
+		} else {
+			c.JSON(400, gin.H{"error": "Invalid JSON format"})
+			return
+		}
 	}
 
 	client, err := getSSHClient()
@@ -267,33 +285,99 @@ func saveRules(c *gin.Context) {
 
 	fRead, _ := sftpClient.Open(configPath)
 	var node yaml.Node
-	yaml.NewDecoder(fRead).Decode(&node)
+	if err := yaml.NewDecoder(fRead).Decode(&node); err != nil {
+		fRead.Close()
+		c.JSON(500, gin.H{"error": "YAML Read Error"})
+		return
+	}
 	fRead.Close()
 
+	if len(node.Content) == 0 {
+		c.JSON(500, gin.H{"error": "Empty YAML"})
+		return
+	}
+
 	root := node.Content[0]
+	var rulesSeq *yaml.Node
+	var proxyGroupsSeq *yaml.Node
+
+	// Find existing sections
 	for i := 0; i < len(root.Content); i += 2 {
 		if root.Content[i].Value == "rules" {
-			rulesSeq := root.Content[i+1]
-			rulesSeq.Content = nil
-			for _, ur := range updatedRules {
-				var line string
-				if ur.Value != "" {
-					line = fmt.Sprintf("%s,%s,%s", ur.Type, ur.Value, ur.ProxyGroup)
-				} else if ur.Type != ur.ProxyGroup {
-					line = fmt.Sprintf("%s,%s", ur.Type, ur.ProxyGroup)
-				} else {
-					line = ur.Type
-				}
+			rulesSeq = root.Content[i+1]
+		}
+		if root.Content[i].Value == "proxy-groups" {
+			proxyGroupsSeq = root.Content[i+1]
+		}
+	}
 
-				newNode := &yaml.Node{Kind: yaml.ScalarNode}
-				if ur.Enabled {
-					newNode.Value = line
-				} else {
-					newNode.Value = ""
-					newNode.HeadComment = "# " + line
+	// Update Proxy Groups if provided
+	if len(req.ProxyGroups) > 0 {
+		if proxyGroupsSeq == nil {
+			// Create proxy-groups section if it doesn't exist
+			keyNode := &yaml.Node{Kind: yaml.ScalarNode, Value: "proxy-groups"}
+			proxyGroupsSeq = &yaml.Node{Kind: yaml.SequenceNode}
+			root.Content = append(root.Content, keyNode, proxyGroupsSeq)
+		}
+
+		// Get existing group names
+		existingGroups := make(map[string]bool)
+		for _, g := range proxyGroupsSeq.Content {
+			for j := 0; j < len(g.Content); j += 2 {
+				if g.Content[j].Value == "name" {
+					existingGroups[g.Content[j+1].Value] = true
 				}
-				rulesSeq.Content = append(rulesSeq.Content, newNode)
 			}
+		}
+
+		systemGroups := map[string]bool{"DIRECT": true, "REJECT": true, "PASS": true, "BLOCK": true}
+
+		// Add new groups
+		for _, gName := range req.ProxyGroups {
+			if !existingGroups[gName] && !systemGroups[gName] {
+				newNode := &yaml.Node{
+					Kind: yaml.MappingNode,
+					Content: []*yaml.Node{
+						{Kind: yaml.ScalarNode, Value: "name"},
+						{Kind: yaml.ScalarNode, Value: gName},
+						{Kind: yaml.ScalarNode, Value: "type"},
+						{Kind: yaml.ScalarNode, Value: "select"},
+						{Kind: yaml.ScalarNode, Value: "proxies"},
+						{
+							Kind: yaml.SequenceNode,
+							Content: []*yaml.Node{
+								{Kind: yaml.ScalarNode, Value: "DIRECT"},
+							},
+						},
+					},
+				}
+				proxyGroupsSeq.Content = append(proxyGroupsSeq.Content, newNode)
+				existingGroups[gName] = true
+			}
+		}
+	}
+
+	// Update Rules
+	if rulesSeq != nil {
+		rulesSeq.Content = nil
+		for _, ur := range req.Rules {
+			var line string
+			if ur.Value != "" {
+				line = fmt.Sprintf("%s,%s,%s", ur.Type, ur.Value, ur.ProxyGroup)
+			} else if ur.Type != ur.ProxyGroup {
+				line = fmt.Sprintf("%s,%s", ur.Type, ur.ProxyGroup)
+			} else {
+				line = ur.Type
+			}
+
+			newNode := &yaml.Node{Kind: yaml.ScalarNode}
+			if ur.Enabled {
+				newNode.Value = line
+			} else {
+				newNode.Value = ""
+				newNode.HeadComment = "# " + line
+			}
+			rulesSeq.Content = append(rulesSeq.Content, newNode)
 		}
 	}
 

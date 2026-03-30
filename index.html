@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XKeen Mihomo Rules Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div id="app" class="container mx-auto p-6">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Mihomo Rules Manager</h1>
+            <div class="space-x-4">
+                <button @click="fetchConfig" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">Обновить данные</button>
+                <button @click="saveConfig" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow font-bold">СОХРАНИТЬ И ПРИМЕНИТЬ</button>
+            </div>
+        </div>
+
+        <!-- Таблица правил -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full leading-normal">
+                <thead>
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm">
+                        <th class="px-5 py-3 border-b-2 border-gray-200 text-left">Вкл</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 text-left">Тип</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 text-left">Значение</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 text-left">Прокси-группа</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 text-center">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(rule, index) in rules" :key="index" :class="{'opacity-50 bg-gray-50': !rule.enabled}">
+                        <td class="px-5 py-4 border-b border-gray-200">
+                            <input type="checkbox" v-model="rule.enabled" class="w-5 h-5">
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200">
+                            <select v-model="rule.type" @change="updateRaw(index)" class="border p-1 rounded">
+                                <option>DOMAIN-SUFFIX</option>
+                                <option>DOMAIN-KEYWORD</option>
+                                <option>DOMAIN</option>
+                                <option>IP-CIDR</option>
+                                <option>GEOIP</option>
+                                <option>MATCH</option>
+                                <option>OTHER</option>
+                            </select>
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200">
+                            <input type="text" v-model="rule.value" @input="updateRaw(index)" class="w-full border p-1 rounded">
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200">
+                            <select v-model="rule.proxy_group" @change="updateRaw(index)" class="border p-1 rounded">
+                                <option v-for="g in proxyGroups" :key="g">{{g}}</option>
+                            </select>
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 text-center">
+                            <button @click="removeRule(index)" class="text-red-600 hover:text-red-900 font-bold">Удалить</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <button @click="addRule" class="mt-6 bg-gray-800 text-white px-4 py-2 rounded">+ Добавить правило</button>
+        
+        <!-- Индикатор загрузки -->
+        <div v-if="loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white">
+            <div class="text-xl">Обработка...</div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue
+        createApp({
+            data() {
+                return {
+                    rules: [],
+                    proxyGroups: [],
+                    loading: false
+                }
+            },
+            methods: {
+                async fetchConfig() {
+                    this.loading = true
+                    try {
+                        const res = await fetch('/api/config')
+                        const data = await res.json()
+                        this.rules = data.rules
+                        this.proxyGroups = data.proxy_groups
+                    } catch (err) {
+                        alert('Ошибка загрузки: ' + err)
+                    } finally {
+                        this.loading = false
+                    }
+                },
+                addRule() {
+                    this.rules.push({
+                        enabled: true,
+                        type: 'DOMAIN-SUFFIX',
+                        value: '',
+                        proxy_group: this.proxyGroups[0] || 'Proxy',
+                        raw: 'DOMAIN-SUFFIX,,Proxy'
+                    })
+                },
+                removeRule(index) {
+                    this.rules.splice(index, 1)
+                },
+                updateRaw(index) {
+                    const r = this.rules[index]
+                    if (r.type !== 'OTHER') {
+                        r.raw = `${r.type},${r.value},${r.proxy_group}`
+                    }
+                },
+                async saveConfig() {
+                    this.loading = true
+                    try {
+                        const res = await fetch('/api/rules', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(this.rules)
+                        })
+                        if (res.ok) {
+                            alert('Сохранено и применено!')
+                        } else {
+                            const data = await res.json()
+                            alert('Ошибка: ' + data.error)
+                        }
+                    } catch (err) {
+                        alert('Ошибка сохранения: ' + err)
+                    } finally {
+                        this.loading = false
+                    }
+                }
+            },
+            mounted() {
+                this.fetchConfig()
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>

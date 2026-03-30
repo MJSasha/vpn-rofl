@@ -8,7 +8,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body class="bg-slate-50 font-sans text-slate-900 transition-colors duration-300">
-    <div id="app" class="container mx-auto p-4 md:p-8 max-w-6xl">
+    <div id="app" v-cloak class="container mx-auto p-4 md:p-8 max-w-6xl">
         <!-- Header Section -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
@@ -25,33 +25,49 @@
         </div>
 
         <!-- Stats & Search -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div class="md:col-span-2 relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
+        <div class="flex flex-col lg:flex-row gap-4 mb-8 items-start">
+            <div class="w-full lg:flex-grow flex flex-col md:flex-row gap-3">
+                <div class="flex-grow relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input type="text" v-model="searchQuery" 
+                           placeholder="Поиск по значению, типу или группе..." 
+                           class="block w-full pl-11 pr-10 h-[52px] border border-slate-200 rounded-2xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm transition-all text-sm">
+                    <button v-if="searchQuery" @click="searchQuery = ''" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>
-                <input type="text" v-model="searchQuery" 
-                       placeholder="Поиск по значению, типу или группе..." 
-                       class="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-2xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all text-sm">
-                <button v-if="searchQuery" @click="searchQuery = ''" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+
+                <div class="relative min-w-[220px]">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                    </div>
+                    <select v-model="selectedGroup" 
+                            class="block w-full pl-11 pr-10 h-[52px] border border-slate-200 rounded-2xl leading-5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm transition-all text-sm appearance-none cursor-pointer text-slate-600 font-medium">
+                        <option value="">Все группы</option>
+                        <option v-for="g in proxyGroups" :key="g" :value="g">{{g}}</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
             </div>
             
-            <div class="flex gap-4">
-                <div class="flex-1 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center">
-                    <span class="text-2xl font-bold text-slate-800">{{ rules.length }}</span>
-                    <span class="text-xs text-slate-400 uppercase font-semibold">Всего</span>
+            <div class="flex gap-3 shrink-0 h-[52px]">
+                <div class="bg-white px-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center min-w-[90px]">
+                    <span class="text-xl font-bold text-slate-800">{{ rules.length }}</span>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Всего</span>
                 </div>
-                <div class="flex-1 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center">
-                    <span class="text-2xl font-bold text-green-600">{{ activeCount }}</span>
-                    <span class="text-xs text-slate-400 uppercase font-semibold">Активны</span>
+                <div class="bg-white px-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center min-w-[90px]">
+                    <span class="text-xl font-bold text-green-600">{{ activeCount }}</span>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Активны</span>
                 </div>
-                <div class="flex flex-col gap-2">
-                    <button @click="toggleAll(true)" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded-lg transition-colors font-bold uppercase">Вкл. все</button>
-                    <button @click="toggleAll(false)" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded-lg transition-colors font-bold uppercase">Откл. все</button>
+                <div class="flex flex-col gap-1 justify-between py-0.5">
+                    <button @click="toggleAll(true)" class="text-[9px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors font-bold uppercase whitespace-nowrap leading-none">Вкл. все</button>
+                    <button @click="toggleAll(false)" class="text-[9px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors font-bold uppercase whitespace-nowrap leading-none">Откл. все</button>
                 </div>
             </div>
         </div>
@@ -100,32 +116,49 @@
                                 </label>
                             </td>
                             <td class="px-6 py-4">
-                                <select v-model="rule.type" @change="updateRawByRule(rule)" 
-                                        class="bg-transparent border-none text-sm font-semibold text-slate-700 focus:ring-0 cursor-pointer block w-full p-0">
-                                    <option>DOMAIN-SUFFIX</option>
-                                    <option>DOMAIN-KEYWORD</option>
-                                    <option>DOMAIN</option>
-                                    <option>IP-CIDR</option>
-                                    <option>GEOIP</option>
-                                    <option>GEOSITE</option>
-                                    <option>IP-ASN</option>
-                                    <option>RULE-SET</option>
-                                    <option>AND</option>
-                                    <option>OR</option>
-                                    <option>MATCH</option>
-                                    <option>OTHER</option>
-                                </select>
+                                <div class="flex items-center gap-2 group/type relative">
+                                    <div class="relative flex-grow">
+                                        <select v-model="rule.type" @change="updateRawByRule(rule)" 
+                                                :title="typeHints[rule.type] || ''"
+                                                class="bg-slate-100/50 hover:bg-slate-100 border-none text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all">
+                                            <option>DOMAIN-SUFFIX</option>
+                                            <option>DOMAIN-KEYWORD</option>
+                                            <option>DOMAIN</option>
+                                            <option>IP-CIDR</option>
+                                            <option>GEOIP</option>
+                                            <option>GEOSITE</option>
+                                            <option>IP-ASN</option>
+                                            <option>RULE-SET</option>
+                                            <option>AND</option>
+                                            <option>OR</option>
+                                            <option>MATCH</option>
+                                            <option>OTHER</option>
+                                        </select>
+                                        <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </div>
+                                    </div>
+                                    <div :title="typeHints[rule.type] || 'Нет описания'" 
+                                         class="flex-shrink-0 text-slate-300 hover:text-blue-500 cursor-help transition-colors p-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-6 py-4">
                                 <input type="text" v-model="rule.value" @input="updateRawByRule(rule)" 
-                                       placeholder="example.com"
-                                       class="w-full bg-transparent border-none text-sm focus:ring-0 p-0 text-slate-600 placeholder-slate-300">
+                                       :placeholder="valuePlaceholders[rule.type] || 'example.com'"
+                                       class="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-400 border-dashed text-sm focus:ring-0 p-1 text-slate-600 placeholder-slate-300 transition-all">
                             </td>
                             <td class="px-6 py-4">
-                                <select v-model="rule.proxy_group" @change="updateRawByRule(rule)" 
-                                        class="bg-transparent border-none text-sm font-medium text-blue-600 focus:ring-0 cursor-pointer block w-full p-0">
-                                    <option v-for="g in proxyGroups" :key="g">{{g}}</option>
-                                </select>
+                                <div class="relative">
+                                    <select v-model="rule.proxy_group" @change="updateRawByRule(rule)" 
+                                            class="bg-blue-50/50 hover:bg-blue-50 border-none text-xs font-bold text-blue-600 focus:ring-2 focus:ring-blue-500/20 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all">
+                                        <option v-for="g in proxyGroups" :key="g">{{g}}</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-blue-300">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-6 py-4 text-center">
                                 <button @click="removeRule(rule)" 
@@ -195,10 +228,37 @@
                     proxyGroups: [],
                     loading: false,
                     searchQuery: '',
+                    selectedGroup: '',
                     originalRulesJson: '[]',
                     hasChanges: false,
                     sortKey: '',
-                    sortOrder: 1
+                    sortOrder: 1,
+                    typeHints: {
+                        'DOMAIN-SUFFIX': 'Совпадение по суффиксу домена (например, google.com совпадет с www.google.com)',
+                        'DOMAIN-KEYWORD': 'Совпадение по ключевому слову в домене',
+                        'DOMAIN': 'Точное совпадение домена',
+                        'IP-CIDR': 'Совпадение по IP адресу или подсети (например, 192.168.1.0/24)',
+                        'GEOIP': 'Совпадение по стране (например, CN, US)',
+                        'GEOSITE': 'Совпадение по группе доменов (например, youtube, google)',
+                        'IP-ASN': 'Совпадение по номеру автономной системы (ASN)',
+                        'RULE-SET': 'Использование внешнего набора правил',
+                        'AND': 'Логическое И для нескольких условий',
+                        'OR': 'Логическое ИЛИ для нескольких условий',
+                        'MATCH': 'Правило по умолчанию (всегда совпадает)',
+                        'OTHER': 'Произвольное правило в формате Mihomo'
+                    },
+                    valuePlaceholders: {
+                        'DOMAIN-SUFFIX': 'google.com',
+                        'DOMAIN-KEYWORD': 'google',
+                        'DOMAIN': 'google.com',
+                        'IP-CIDR': '192.168.1.0/24',
+                        'GEOIP': 'CN',
+                        'GEOSITE': 'youtube',
+                        'IP-ASN': '13335',
+                        'RULE-SET': 'ruleset-name',
+                        'MATCH': '',
+                        'OTHER': 'Type,Value,Proxy'
+                    }
                 }
             },
             watch: {
@@ -216,6 +276,10 @@
                 filteredRules() {
                     let result = [...this.rules]
                     
+                    if (this.selectedGroup) {
+                        result = result.filter(r => r.proxy_group === this.selectedGroup)
+                    }
+
                     if (this.searchQuery) {
                         const q = this.searchQuery.toLowerCase()
                         result = result.filter(r => 
@@ -270,14 +334,17 @@
                 },
                 addRule() {
                     const newId = Math.max(0, ...this.rules.map(r => r.id)) + 1
-                    this.rules.push({
+                    const group = this.selectedGroup || this.proxyGroups[0] || 'Proxy'
+                    const newRule = {
                         id: newId,
                         enabled: true,
                         type: 'DOMAIN-SUFFIX',
                         value: '',
-                        proxy_group: this.proxyGroups[0] || 'Proxy',
-                        raw: 'DOMAIN-SUFFIX,,Proxy'
-                    })
+                        proxy_group: group,
+                        raw: ''
+                    }
+                    this.updateRawByRule(newRule)
+                    this.rules.push(newRule)
                 },
                 removeRule(rule) {
                     if (confirm('Удалить это правило?')) {

@@ -4,27 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mihomo Manager</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuedraggable@4.1.0/dist/vuedraggable.umd.min.js"></script>
 </head>
-<body class="bg-slate-50 font-sans text-slate-900 transition-all duration-300">
+<body class="bg-slate-50 font-sans text-slate-900 transition-all duration-300 dark:bg-slate-950 dark:text-slate-100">
     <div id="app" v-cloak class="min-h-screen pb-20">
         <!-- Sticky Header Area -->
-        <header class="sticky top-0 z-[100] bg-slate-50/90 backdrop-blur-md border-b border-transparent transition-all duration-300"
-                :class="{'border-slate-200 shadow-sm bg-white/95': isScrolled}">
+        <header class="sticky top-0 z-[100] bg-slate-50/90 backdrop-blur-md border-b border-transparent transition-all duration-300 dark:bg-slate-950/90"
+                :class="{'border-slate-200 shadow-sm bg-white/95 dark:bg-slate-900/95 dark:border-slate-800': isScrolled}">
             <div class="container mx-auto px-4 md:px-8 max-w-4xl py-4 flex flex-col gap-6">
                 <!-- Top Row: Title & Actions -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div class="flex items-center gap-6">
                         <div>
-                            <h1 class="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                            <h1 class="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2 dark:text-white">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                 Mihomo Rules
                             </h1>
                             <div class="flex items-center gap-3 mt-1">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Manager</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded dark:bg-slate-800">Manager</span>
                                 <div class="flex gap-2 text-[10px] font-bold uppercase tracking-tight">
                                     <span class="text-slate-500">{{ rules.length }} <span class="text-slate-400">всего</span></span>
                                     <span class="text-green-600">{{ activeCount }} <span class="text-slate-400">активно</span></span>
@@ -35,7 +41,7 @@
 
                     <div class="flex items-center gap-2">
                         <transition name="fade">
-                            <div v-if="hasChanges" class="hidden sm:flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-wider bg-blue-50 px-3 py-2 rounded-xl border border-blue-100 shadow-sm">
+                            <div v-if="hasChanges" class="hidden sm:flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-wider bg-blue-50 px-3 py-2 rounded-xl border border-blue-100 shadow-sm dark:bg-blue-900/20 dark:border-blue-800">
                                 <span class="relative flex h-2 w-2">
                                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                                     <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
@@ -44,8 +50,15 @@
                             </div>
                         </transition>
 
+                        <button @click="toggleTheme" 
+                                class="flex items-center justify-center w-10 h-10 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400"
+                                :title="isDark ? 'Светлая тема' : 'Темная тема'">
+                            <svg v-if="!isDark" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.07" x2="5.64" y2="17.66"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        </button>
+
                         <button @click="updateApp"
-                                class="bg-slate-800 hover:bg-black text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95">
+                                class="bg-slate-800 hover:bg-black text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95 dark:bg-slate-700 dark:hover:bg-slate-600 dark:shadow-none">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             Обновить ПО
                         </button>
@@ -67,7 +80,7 @@
                         </div>
                         <input type="text" v-model="searchQuery"
                                placeholder="Поиск по правилам..."
-                               class="block w-full pl-11 pr-10 h-[48px] border border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 shadow-sm transition-all text-sm">
+                               class="block w-full pl-11 pr-10 h-[48px] border border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 shadow-sm transition-all text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder-slate-500">
                         <button v-if="searchQuery" @click="searchQuery = ''" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-slate-500">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
@@ -76,7 +89,7 @@
                     <div class="flex gap-2 w-full md:w-auto">
                         <div class="relative flex-grow md:flex-grow-0">
                             <select v-model="selectedGroup"
-                                    class="block w-full md:w-[180px] pl-4 pr-10 h-[48px] border border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 shadow-sm text-sm appearance-none cursor-pointer text-slate-600 font-bold">
+                                    class="block w-full md:w-[180px] pl-4 pr-10 h-[48px] border border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 shadow-sm text-sm appearance-none cursor-pointer text-slate-600 font-bold dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
                                 <option value="">Все группы</option>
                                 <option v-for="g in proxyGroups" :key="g" :value="g">{{g}}</option>
                             </select>
@@ -86,18 +99,18 @@
                         </div>
 
                         <button @click="addRule"
-                                class="flex-shrink-0 flex items-center justify-center h-[48px] px-5 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-600 rounded-2xl shadow-sm transition-all text-sm font-black gap-2 active:scale-95">
+                                class="flex-shrink-0 flex items-center justify-center h-[48px] px-5 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-600 rounded-2xl shadow-sm transition-all text-sm font-black gap-2 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             Правило
                         </button>
 
                         <button @click="addGroup" title="Добавить группу"
-                                class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95">
+                                class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                         </button>
 
                         <button @click="fetchConfig" title="Обновить список"
-                                class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95">
+                                class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
                         </button>
                     </div>
@@ -107,11 +120,11 @@
 
         <main class="container mx-auto px-4 md:px-8 max-w-4xl mt-8">
             <!-- Rules Table -->
-            <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
+            <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden dark:bg-slate-900 dark:border-slate-800 dark:shadow-none">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse table-fixed">
-                        <thead class="bg-slate-50/80 border-b border-slate-100">
-                            <tr class="text-slate-400 uppercase text-[10px] font-black tracking-widest">
+                        <thead class="bg-slate-50/80 border-b border-slate-100 dark:bg-slate-800/50 dark:border-slate-800">
+                            <tr class="text-slate-400 uppercase text-[10px] font-black tracking-widest dark:text-slate-500">
                                 <th class="px-4 py-4 w-12"></th>
                                 <th class="px-6 py-4 w-20">Вкл</th>
                                 <th class="px-6 py-4 w-40">Тип</th>
@@ -122,31 +135,31 @@
                         </thead>
                         <draggable v-model="draggableRules" 
                                    tag="tbody" 
-                                   class="divide-y divide-slate-50" 
+                                   class="divide-y divide-slate-50 dark:divide-slate-800" 
                                    handle=".drag-handle" 
                                    item-key="id" 
                                    @end="onDragEnd"
-                                   :disabled="searchQuery !== '' || selectedGroup !== ''"
+                                   :disabled="!!searchQuery || !!selectedGroup"
                                    :animation="200"
-                                   ghost-class="bg-blue-50/50">
-                            <template #item="{element: rule, index}">
-                                <tr class="group hover:bg-slate-50/50 transition-colors"
-                                    :class="{'opacity-50 grayscale-[0.5]': !rule.enabled}">
+                                   ghost-class="ghost">
+                            <template #item="{element}">
+                                <tr class="group hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-800/50"
+                                    :class="{'opacity-50 grayscale-[0.5]': !element.enabled}">
                                     <td class="px-4 py-4">
-                                        <div class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-blue-500 transition-colors"
-                                             v-if="rule.type !== 'MATCH' && searchQuery === '' && selectedGroup === ''">
+                                        <div class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-blue-500 transition-colors dark:text-slate-600 dark:hover:text-blue-400"
+                                             v-if="element.type !== 'MATCH' && !searchQuery && !selectedGroup">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4">
                                         <label class="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" v-model="rule.enabled" class="sr-only peer">
-                                            <div class="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                            <input type="checkbox" v-model="element.enabled" class="sr-only peer">
+                                            <div class="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 dark:bg-slate-700"></div>
                                         </label>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <select v-model="rule.type" @change="updateRawByRule(rule)"
-                                                class="bg-slate-100 hover:bg-slate-200 border-none text-[11px] font-black text-slate-600 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all">
+                                        <select v-model="element.type" @change="updateRawByRule(element)"
+                                                class="bg-slate-100 hover:bg-slate-200 border-none text-[11px] font-black text-slate-600 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700">
                                             <option>DOMAIN-SUFFIX</option>
                                             <option>DOMAIN-KEYWORD</option>
                                             <option>DOMAIN</option>
@@ -162,22 +175,22 @@
                                         </select>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <template v-if="rule.type === 'MATCH'">
-                                            <span class="text-[11px] font-bold text-slate-300 italic">По умолчанию</span>
+                                        <template v-if="element.type === 'MATCH'">
+                                            <span class="text-[11px] font-bold text-slate-300 italic dark:text-slate-600">По умолчанию</span>
                                         </template>
-                                        <input v-else type="text" v-model="rule.value" @input="updateRawByRule(rule)"
-                                               :placeholder="valuePlaceholders[rule.type] || '...'"
-                                               class="w-full bg-transparent border-none text-sm focus:ring-0 p-0 text-slate-600 placeholder-slate-200 font-medium">
+                                        <input v-else type="text" v-model="element.value" @input="updateRawByRule(element)"
+                                               :placeholder="valuePlaceholders[element.type] || '...'"
+                                               class="w-full bg-transparent border-none text-sm focus:ring-0 p-0 text-slate-600 placeholder-slate-200 font-medium dark:text-slate-300 dark:placeholder-slate-700">
                                     </td>
                                     <td class="px-6 py-4">
-                                        <select v-model="rule.proxy_group" @change="updateRawByRule(rule)" 
-                                                class="bg-blue-50/50 hover:bg-blue-100 text-[11px] font-black text-blue-600 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all">
+                                        <select v-model="element.proxy_group" @change="updateRawByRule(element)" 
+                                                class="bg-blue-50/50 hover:bg-blue-100 text-[11px] font-black text-blue-600 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40">
                                             <option v-for="g in proxyGroups" :key="g">{{g}}</option>
                                         </select>
                                     </td>
                                     <td class="px-6 py-4 text-center">
-                                        <button @click="removeRule(rule)" 
-                                                class="text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2 rounded-lg hover:bg-red-50">
+                                        <button @click="removeRule(element)" 
+                                                class="text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2 rounded-lg hover:bg-red-50 dark:text-slate-700 dark:hover:bg-red-900/20">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                                         </button>
                                     </td>
@@ -201,16 +214,16 @@
         <!-- Global Loader -->
         <transition name="fade">
             <div v-if="loading" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[200]">
-                <div class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
+                <div class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200 dark:bg-slate-900 dark:shadow-none dark:border dark:border-slate-800">
                     <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="font-black text-slate-800 uppercase tracking-widest text-[10px]">Загрузка...</p>
+                    <p class="font-black text-slate-800 uppercase tracking-widest text-[10px] dark:text-slate-200">Загрузка...</p>
                 </div>
             </div>
         </transition>
 
         <!-- Tooltip / Notifications -->
         <transition name="fade">
-            <div v-if="notification" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[300] bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700">
+            <div v-if="notification" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[300] bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 dark:bg-slate-900 dark:border-slate-800">
                 <div class="text-sm font-bold">{{ notification }}</div>
             </div>
         </transition>
@@ -218,7 +231,7 @@
         <!-- Scroll Bottom Button -->
         <div class="fixed bottom-8 right-8 z-50">
             <button @click="scrollToBottom" 
-                    class="flex items-center justify-center w-12 h-12 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group"
+                    class="flex items-center justify-center w-12 h-12 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-blue-400"
                     title="Вниз">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
@@ -234,6 +247,7 @@
         .overflow-x-auto::-webkit-scrollbar { height: 4px; }
         .overflow-x-auto::-webkit-scrollbar-track { background: transparent; }
         .overflow-x-auto::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        .ghost { opacity: 0.5; background: #c8ebfb; }
     </style>
 
     <script>
@@ -248,6 +262,7 @@
                     proxyGroups: [],
                     loading: false,
                     isScrolled: false,
+                    isDark: false,
                     searchQuery: '',
                     selectedGroup: '',
                     notification: '',
@@ -383,6 +398,12 @@
                 scrollToBottom() {
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
                 },
+                toggleTheme() {
+                    this.isDark = !this.isDark
+                    localStorage.setItem('theme', this.isDark ? 'dark' : 'light')
+                    if (this.isDark) document.documentElement.classList.add('dark')
+                    else document.documentElement.classList.remove('dark')
+                },
                 async saveConfig() {
                     this.loading = true
                     try {
@@ -406,6 +427,11 @@
             },
             mounted() {
                 this.fetchConfig()
+                const savedTheme = localStorage.getItem('theme')
+                if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    this.isDark = true
+                    document.documentElement.classList.add('dark')
+                }
                 window.addEventListener('scroll', () => { this.isScrolled = window.scrollY > 20 })
                 window.addEventListener('keydown', (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); this.saveConfig() }

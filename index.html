@@ -196,6 +196,15 @@
                 <div class="text-sm font-bold">{{ notification }}</div>
             </div>
         </transition>
+
+        <!-- Scroll Bottom Button -->
+        <div class="fixed bottom-8 right-8 z-50">
+            <button @click="scrollToBottom" 
+                    class="flex items-center justify-center w-12 h-12 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group"
+                    title="Вниз">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+        </div>
     </div>
 
     <style>
@@ -337,6 +346,9 @@
                         const val = rule.value ? rule.value + ',' : ''
                         rule.raw = `${rule.type},${val}${rule.proxy_group}`
                     }
+                },
+                scrollToBottom() {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
                 },
                 async saveConfig() {
                     this.loading = true

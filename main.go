@@ -106,15 +106,15 @@ func updateApp(c *gin.Context) {
 	// 3. Restart (с небольшой задержкой, чтобы отправить ответ клиенту)
 	go func() {
 		time.Sleep(2 * time.Second)
-		log.Println("🔄 Перезапуск приложения через vpn-rofl...")
+		log.Println("🔄 Перезапуск приложения...")
 
-		// Получаем абсолютный путь к vpn-rofl
-		binaryPath, _ := exec.LookPath("./vpn-rofl")
-		if binaryPath == "" {
-			binaryPath = "./vpn-rofl"
+		// Получаем путь к текущему запущенному файлу
+		exe, err := os.Executable()
+		if err != nil {
+			exe = "./main" // fallback
 		}
 
-		err := syscall.Exec(binaryPath, os.Args, os.Environ())
+		err = syscall.Exec(exe, os.Args, os.Environ())
 		if err != nil {
 			log.Fatalf("❌ Ошибка при перезапуске (syscall.Exec): %v", err)
 		}

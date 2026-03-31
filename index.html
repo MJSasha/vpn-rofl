@@ -329,6 +329,7 @@
             },
             computed: {
                 activeCount() {
+                    if (!this.rules) return 0
                     return this.rules.filter(r => r.enabled).length
                 },
                 draggableRules: {

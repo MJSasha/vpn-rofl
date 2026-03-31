@@ -91,8 +91,9 @@ func updateApp(c *gin.Context) {
 	log.Println("✅ Git pull выполнен успешно")
 
 	// 2. Build
-	// Используем путь к текущему каталогу
-	cmdBuild := exec.Command("go", "build", "-o", "vpn-rofl", "main.go")
+	// Используем имя текущего исполняемого файла для сборки
+	exe, _ := os.Executable()
+	cmdBuild := exec.Command("go", "build", "-o", exe, "main.go")
 	outputBuild, err := cmdBuild.CombinedOutput()
 	if err != nil {
 		log.Printf("❌ Build failed: %v, Output: %s", err, string(outputBuild))

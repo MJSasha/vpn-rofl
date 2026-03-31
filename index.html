@@ -144,7 +144,7 @@
                                    ghost-class="ghost">
                             <template #item="{element}">
                                 <tr class="group hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-800/50"
-                                    :class="{'opacity-50 grayscale-[0.5]': !element.enabled}">
+                                    :class="{'opacity-50 grayscale-[0.5]': !element.enabled, 'bg-blue-50/50 dark:bg-blue-900/20 ring-1 ring-blue-500/30 ring-inset new-rule-pulse': element.isNew}">
                                     <td class="px-4 py-4">
                                         <div class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-blue-500 transition-colors dark:text-slate-600 dark:hover:text-blue-400"
                                              v-if="element.type !== 'MATCH' && !searchQuery && !selectedGroup">
@@ -242,6 +242,15 @@
         .fade-enter-active, .fade-leave-active { transition: all 0.2s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
         [v-cloak] { display: none; }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .new-rule-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
 
         /* Custom scrollbar for table container */
         .overflow-x-auto::-webkit-scrollbar { height: 4px; }
@@ -360,16 +369,51 @@
                     this.rules = [...others, ...matches]
                 },
                 addRule() {
+                    // Очищаем фильтры, чтобы увидеть новое правило
+                    this.searchQuery = ''
+                    this.selectedGroup = ''
+
                     const newId = Math.max(0, ...this.rules.map(r => r.id)) + 1
                     const newRule = {
-                        id: newId, enabled: true, type: 'DOMAIN-SUFFIX',
-                        value: '', proxy_group: this.proxyGroups[0] || 'Proxy', raw: ''
+                        id: newId, 
+                        enabled: true, 
+                        type: 'DOMAIN-SUFFIX',
+                        value: '', 
+                        proxy_group: this.proxyGroups[0] || 'Proxy', 
+                        raw: '',
+                        isNew: true
                     }
                     this.updateRawByRule(newRule)
+                    
+                    // Добавляем перед MATCH (или в конец, если MATCH нет)
                     const matchIdx = this.rules.findIndex(r => r.type === 'MATCH')
-                    if (matchIdx !== -1) this.rules.splice(matchIdx, 0, newRule)
-                    else this.rules.push(newRule)
-                    this.showNotify('Правило добавлено')
+                    if (matchIdx !== -1) {
+                        this.rules.splice(matchIdx, 0, newRule)
+                    } else {
+                        this.rules.push(newRule)
+                    }
+                    
+                    this.showNotify('Правило добавлено в конец списка')
+                    
+                    // Убираем подсветку через некоторое время
+                    setTimeout(() => {
+                        newRule.isNew = false
+                    }, 5000)
+
+                    // Скроллим вниз и фокусимся на поле ввода
+                    this.$nextTick(() => {
+                        this.scrollToBottom()
+                        // Находим инпут в последней строке (или перед MATCH)
+                        setTimeout(() => {
+                            const rows = document.querySelectorAll('table tbody tr')
+                            const matchRowIdx = Array.from(rows).findIndex(row => row.innerText.includes('По умолчанию'))
+                            const targetRow = matchRowIdx !== -1 ? rows[matchRowIdx - 1] : rows[rows.length - 1]
+                            if (targetRow) {
+                                const input = targetRow.querySelector('td:nth-child(4) input')
+                                if (input) input.focus()
+                            }
+                        }, 500)
+                    })
                 },
                 addGroup() {
                     const name = prompt('Название группы:')

@@ -8,7 +8,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -65,6 +67,7 @@ func main() {
 
 	r.GET("/api/config", getConfig)
 	r.POST("/api/rules", saveRules)
+	r.POST("/api/update", updateApp)
 	r.GET("/", func(c *gin.Context) {
 		file, _ := f.ReadFile("index.html")
 		c.Data(200, "text/html; charset=utf-8", file)
@@ -72,6 +75,50 @@ func main() {
 
 	log.Printf("🚀 Приложение запущено на :8050")
 	r.Run(":8050")
+}
+
+func updateApp(c *gin.Context) {
+	log.Println("📥 Запуск обновления...")
+
+	// 1. Git pull
+	cmdPull := exec.Command("git", "pull")
+	outputPull, err := cmdPull.CombinedOutput()
+	if err != nil {
+		log.Printf("❌ Git pull failed: %v, Output: %s", err, string(outputPull))
+		c.JSON(500, gin.H{"error": "Git pull failed: " + err.Error(), "output": string(outputPull)})
+		return
+	}
+	log.Println("✅ Git pull выполнен успешно")
+
+	// 2. Build
+	// Используем путь к текущему каталогу
+	cmdBuild := exec.Command("go", "build", "-o", "vpn-rofl", "main.go")
+	outputBuild, err := cmdBuild.CombinedOutput()
+	if err != nil {
+		log.Printf("❌ Build failed: %v, Output: %s", err, string(outputBuild))
+		c.JSON(500, gin.H{"error": "Build failed: " + err.Error(), "output": string(outputBuild)})
+		return
+	}
+	log.Println("✅ Приложение пересобрано")
+
+	c.JSON(200, gin.H{"status": "Update successful, restarting..."})
+
+	// 3. Restart (с небольшой задержкой, чтобы отправить ответ клиенту)
+	go func() {
+		time.Sleep(2 * time.Second)
+		log.Println("🔄 Перезапуск приложения через vpn-rofl...")
+
+		// Получаем абсолютный путь к vpn-rofl
+		binaryPath, _ := exec.LookPath("./vpn-rofl")
+		if binaryPath == "" {
+			binaryPath = "./vpn-rofl"
+		}
+
+		err := syscall.Exec(binaryPath, os.Args, os.Environ())
+		if err != nil {
+			log.Fatalf("❌ Ошибка при перезапуске (syscall.Exec): %v", err)
+		}
+	}()
 }
 
 func getSSHClient() (*ssh.Client, error) {

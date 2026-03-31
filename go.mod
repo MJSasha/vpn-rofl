@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/gin-gonic/gin v1.9.1
+	github.com/joho/godotenv v1.5.1
 	github.com/pkg/sftp v1.13.6
 	golang.org/x/crypto v0.45.0
 	gopkg.in/yaml.v3 v3.0.1

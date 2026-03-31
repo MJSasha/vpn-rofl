@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v3"
@@ -44,6 +45,14 @@ var (
 )
 
 func main() {
+	_ = godotenv.Load() // Игнорируем ошибку, если файла нет
+	sshHost = os.Getenv("SSH_HOST")
+	sshPort = os.Getenv("SSH_PORT")
+	sshUser = os.Getenv("SSH_USER")
+	sshPass = os.Getenv("SSH_PASS")
+	configPath = os.Getenv("CONFIG_PATH")
+	mihomoAPI = os.Getenv("MIHOMO_API")
+
 	if sshPort == "" {
 		sshPort = "22"
 	}

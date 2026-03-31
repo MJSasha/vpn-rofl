@@ -6,9 +6,11 @@
     <title>XKeen Mihomo Rules Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuedraggable@4.1.0/dist/vuedraggable.umd.min.js"></script>
 </head>
 <body class="bg-slate-50 font-sans text-slate-900 transition-colors duration-300">
-    <div id="app" v-cloak class="container mx-auto p-4 md:p-8 max-w-6xl">
+    <div id="app" v-cloak class="container mx-auto p-4 md:p-8 max-w-4xl">
         <!-- Header Section -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
@@ -64,6 +66,10 @@
             </div>
             
             <div class="flex gap-3 shrink-0 h-[52px]">
+                <div v-if="sortKey || searchQuery || selectedGroup" 
+                     class="flex items-center px-4 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100 text-[10px] font-bold uppercase tracking-tight text-center max-w-[120px] leading-tight">
+                    Перетаскивание отключено (активен фильтр)
+                </div>
                 <div class="bg-white px-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center min-w-[90px]">
                     <span class="text-xl font-bold text-slate-800">{{ rules.length }}</span>
                     <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Всего</span>
@@ -82,16 +88,17 @@
         <!-- Rules Table -->
         <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden mb-20">
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left border-collapse table-fixed">
                     <thead>
                         <tr class="bg-slate-50/50 text-slate-500 uppercase text-[11px] font-bold tracking-wider">
-                            <th @click="sortBy('enabled')" class="px-6 py-4 w-16 cursor-pointer hover:text-blue-600 transition-colors">
+                            <th class="px-3 py-4 w-10"></th>
+                            <th @click="sortBy('enabled')" class="px-6 py-4 w-20 cursor-pointer hover:text-blue-600 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Вкл
                                     <span v-if="sortKey === 'enabled'">{{ sortOrder === 1 ? '↑' : '↓' }}</span>
                                 </div>
                             </th>
-                            <th @click="sortBy('type')" class="px-6 py-4 w-48 cursor-pointer hover:text-blue-600 transition-colors">
+                            <th @click="sortBy('type')" class="px-6 py-4 w-40 cursor-pointer hover:text-blue-600 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Тип
                                     <span v-if="sortKey === 'type'">{{ sortOrder === 1 ? '↑' : '↓' }}</span>
@@ -103,96 +110,98 @@
                                     <span v-if="sortKey === 'value'">{{ sortOrder === 1 ? '↑' : '↓' }}</span>
                                 </div>
                             </th>
-                            <th @click="sortBy('proxy_group')" class="px-6 py-4 w-48 cursor-pointer hover:text-blue-600 transition-colors">
+                            <th @click="sortBy('proxy_group')" class="px-6 py-4 w-44 cursor-pointer hover:text-blue-600 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Группа
                                     <span v-if="sortKey === 'proxy_group'">{{ sortOrder === 1 ? '↑' : '↓' }}</span>
                                 </div>
                             </th>
-                            <th class="px-6 py-4 w-24 text-center"></th>
+                            <th class="px-6 py-4 w-16 text-center"></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr v-for="(rule, index) in filteredRules" :key="rule.id" 
-                            class="group hover:bg-blue-50/30 transition-colors"
-                            :class="{'bg-slate-50/50 opacity-70': !rule.enabled}">
-                            <td class="px-6 py-4">
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" v-model="rule.enabled" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2 group/type relative">
-                                    <div class="relative flex-grow">
-                                        <select v-model="rule.type" @change="updateRawByRule(rule)" 
-                                                :title="typeHints[rule.type] || ''"
-                                                class="bg-slate-100/50 hover:bg-slate-100 border-none text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all">
-                                            <option>DOMAIN-SUFFIX</option>
-                                            <option>DOMAIN-KEYWORD</option>
-                                            <option>DOMAIN</option>
-                                            <option>IP-CIDR</option>
-                                            <option>GEOIP</option>
-                                            <option>GEOSITE</option>
-                                            <option>IP-ASN</option>
-                                            <option>RULE-SET</option>
-                                            <option>AND</option>
-                                            <option>OR</option>
-                                            <option>MATCH</option>
-                                            <option>OTHER</option>
+                    <draggable v-model="draggableRules" 
+                               tag="tbody" 
+                               class="divide-y divide-slate-100" 
+                               handle=".drag-handle" 
+                               item-key="id" 
+                               @end="onDragEnd"
+                               :disabled="sortKey !== '' || searchQuery !== '' || selectedGroup !== ''"
+                               :animation="200"
+                               ghost-class="bg-blue-50/50">
+                        <template #item="{element: rule, index}">
+                            <tr class="group hover:bg-blue-50/30 transition-colors"
+                                :class="{'bg-slate-50/50 opacity-70': !rule.enabled}">
+                                <td class="px-3 py-4">
+                                    <div class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-blue-500 transition-colors"
+                                         v-if="rule.type !== 'MATCH' && sortKey === '' && searchQuery === '' && selectedGroup === ''">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" v-model="rule.enabled" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2 group/type relative">
+                                        <div class="relative flex-grow">
+                                            <select v-model="rule.type" @change="updateRawByRule(rule)" 
+                                                    :title="typeHints[rule.type] || ''"
+                                                    class="bg-slate-100/50 hover:bg-slate-100 border-none text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all">
+                                                <option>DOMAIN-SUFFIX</option>
+                                                <option>DOMAIN-KEYWORD</option>
+                                                <option>DOMAIN</option>
+                                                <option>IP-CIDR</option>
+                                                <option>GEOIP</option>
+                                                <option>GEOSITE</option>
+                                                <option>IP-ASN</option>
+                                                <option>RULE-SET</option>
+                                                <option>AND</option>
+                                                <option>OR</option>
+                                                <option>MATCH</option>
+                                                <option>OTHER</option>
+                                            </select>
+                                            <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400">
+                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </div>
+                                        </div>
+                                        <div :title="typeHints[rule.type] || 'Нет описания'" 
+                                             class="flex-shrink-0 text-slate-300 hover:text-blue-500 cursor-help transition-colors p-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <template v-if="rule.type === 'MATCH'">
+                                        <span class="text-xs font-medium text-slate-400 italic px-1">Весь остальной трафик</span>
+                                    </template>
+                                    <input v-else type="text" v-model="rule.value" @input="updateRawByRule(rule)" 
+                                           :placeholder="valuePlaceholders[rule.type] || 'example.com'"
+                                           class="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-400 border-dashed text-sm focus:ring-0 p-1 text-slate-600 placeholder-slate-300 transition-all">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="relative">
+                                        <select v-model="rule.proxy_group" @change="updateRawByRule(rule)" 
+                                                class="bg-blue-50/50 hover:bg-blue-50 border-none text-xs font-bold text-blue-600 focus:ring-2 focus:ring-blue-500/20 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all">
+                                            <option v-for="g in proxyGroups" :key="g">{{g}}</option>
                                         </select>
-                                        <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400">
+                                        <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-blue-300">
                                             <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                         </div>
                                     </div>
-                                    <div :title="typeHints[rule.type] || 'Нет описания'" 
-                                         class="flex-shrink-0 text-slate-300 hover:text-blue-500 cursor-help transition-colors p-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                        <button @click="removeRule(rule)" 
+                                                class="text-slate-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-all">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                        </button>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <template v-if="rule.type === 'MATCH'">
-                                    <span class="text-xs font-medium text-slate-400 italic px-1">Весь остальной трафик</span>
-                                </template>
-                                <input v-else type="text" v-model="rule.value" @input="updateRawByRule(rule)" 
-                                       :placeholder="valuePlaceholders[rule.type] || 'example.com'"
-                                       class="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-400 border-dashed text-sm focus:ring-0 p-1 text-slate-600 placeholder-slate-300 transition-all">
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="relative">
-                                    <select v-model="rule.proxy_group" @change="updateRawByRule(rule)" 
-                                            class="bg-blue-50/50 hover:bg-blue-50 border-none text-xs font-bold text-blue-600 focus:ring-2 focus:ring-blue-500/20 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all">
-                                        <option v-for="g in proxyGroups" :key="g">{{g}}</option>
-                                    </select>
-                                    <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-blue-300">
-                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                    <button @click="moveRule(index, -1)" 
-                                            :disabled="index === 0 || rule.type === 'MATCH'"
-                                            class="text-slate-300 hover:text-blue-500 p-1.5 rounded-lg hover:bg-blue-50 transition-all disabled:opacity-30 disabled:hover:bg-transparent">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                                    </button>
-                                    <button @click="moveRule(index, 1)" 
-                                            :disabled="index >= filteredRules.length - 1 || rule.type === 'MATCH' || filteredRules[index+1].type === 'MATCH'"
-                                            class="text-slate-300 hover:text-blue-500 p-1.5 rounded-lg hover:bg-blue-50 transition-all disabled:opacity-30 disabled:hover:bg-transparent">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                    </button>
-                                    <button @click="removeRule(rule)" 
-                                            class="text-slate-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-all">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr v-if="filteredRules.length === 0" class="text-center py-10">
-                            <td colspan="5" class="px-6 py-12 text-slate-400 italic">Ничего не найдено</td>
-                        </tr>
-                    </tbody>
+                                </td>
+                            </tr>
+                        </template>
+                    </draggable>
                 </table>
             </div>
             
@@ -260,6 +269,9 @@
     <script>
         const { createApp } = Vue
         createApp({
+            components: {
+                draggable: window.vuedraggable
+            },
             data() {
                 return {
                     rules: [],
@@ -314,6 +326,17 @@
                 activeCount() {
                     return this.rules.filter(r => r.enabled).length
                 },
+                draggableRules: {
+                    get() {
+                        return this.filteredRules
+                    },
+                    set(value) {
+                        // Update rules only if no filtering/sorting is active
+                        if (!this.selectedGroup && !this.searchQuery && !this.sortKey) {
+                            this.rules = value
+                        }
+                    }
+                },
                 filteredRules() {
                     let result = [...this.rules]
                     
@@ -347,6 +370,10 @@
                 }
             },
             methods: {
+                onDragEnd() {
+                    this.hasChanges = true
+                    this.ensureMatchAtEnd()
+                },
                 checkChanges() {
                     this.hasChanges = JSON.stringify(this.rules) !== this.originalRulesJson || 
                                      JSON.stringify(this.proxyGroups) !== this.originalGroupsJson
@@ -387,31 +414,6 @@
                     const matchRules = this.rules.filter(r => r.type === 'MATCH')
                     const otherRules = this.rules.filter(r => r.type !== 'MATCH')
                     this.rules = [...otherRules, ...matchRules]
-                },
-                moveRule(index, direction) {
-                    // This index is from filteredRules
-                    const ruleToMove = this.filteredRules[index]
-                    const targetIndex = index + direction
-                    
-                    if (targetIndex < 0 || targetIndex >= this.filteredRules.length) return
-                    
-                    const otherRule = this.filteredRules[targetIndex]
-                    
-                    // Don't move MATCH rules or move above MATCH rules
-                    if (ruleToMove.type === 'MATCH' || otherRule.type === 'MATCH') return
-
-                    // Find real indices in the main rules array
-                    const realIndex1 = this.rules.findIndex(r => r.id === ruleToMove.id)
-                    const realIndex2 = this.rules.findIndex(r => r.id === otherRule.id)
-
-                    if (realIndex1 !== -1 && realIndex2 !== -1) {
-                        const temp = this.rules[realIndex1]
-                        this.rules[realIndex1] = this.rules[realIndex2]
-                        this.rules[realIndex2] = temp
-                        // We need to trigger reactivity
-                        this.rules = [...this.rules]
-                        this.sortKey = '' // Reset sorting when manually moving
-                    }
                 },
                 addGroup() {
                     const name = prompt('Введите название новой группы:')

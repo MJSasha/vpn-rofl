@@ -1,5 +1,6 @@
 # Binaries
 /main
+.env
 
 # Go modules
 /vendor/

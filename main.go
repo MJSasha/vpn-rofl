@@ -26,7 +26,7 @@ var f embed.FS
 
 const (
 	githubRepo = "MJSasha/vpn-rofl"
-	version    = "v1.0.0" // Current version
+	version    = "v1.1.0" // Current version
 )
 
 type Rule struct {
@@ -53,7 +53,7 @@ var (
 )
 
 func main() {
-	_ = godotenv.Load() // Игнорируем ошибку, если файла нет
+	_ = godotenv.Load() // Ignore error if file is missing
 	sshHost = os.Getenv("SSH_HOST")
 	sshPort = os.Getenv("SSH_PORT")
 	sshUser = os.Getenv("SSH_USER")
@@ -79,12 +79,12 @@ func main() {
 		c.Data(200, "text/html; charset=utf-8", file)
 	})
 
-	log.Printf("🚀 Приложение запущено на :8050")
+	log.Printf("🚀 Application started on :8050")
 	r.Run(":8050")
 }
 
 func updateApp(c *gin.Context) {
-	log.Println("📥 Запуск обновления через GitHub Releases...")
+	log.Println("📥 Starting update via GitHub Releases...")
 
 	// 1. Get latest release info from GitHub
 	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", githubRepo))
@@ -145,7 +145,7 @@ func updateApp(c *gin.Context) {
 	}
 
 	// 3. Download the new binary
-	log.Printf("📂 Скачивание: %s", downloadURL)
+	log.Printf("📂 Downloading: %s", downloadURL)
 	resp, err = http.Get(downloadURL)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to download update: " + err.Error()})
@@ -182,16 +182,16 @@ func updateApp(c *gin.Context) {
 		return
 	}
 
-	log.Println("✅ Обновление скачано и заменено")
+	log.Println("✅ Update downloaded and replaced")
 	c.JSON(200, gin.H{"status": "Update successful, restarting...", "new_version": release.TagName})
 
 	// 5. Restart
 	go func() {
 		time.Sleep(2 * time.Second)
-		log.Println("🔄 Перезапуск приложения...")
+		log.Println("🔄 Restarting application...")
 		err = syscall.Exec(exe, os.Args, os.Environ())
 		if err != nil {
-			log.Fatalf("❌ Ошибка при перезапуске (syscall.Exec): %v", err)
+			log.Fatalf("❌ Restart failed (syscall.Exec): %v", err)
 		}
 	}()
 }
@@ -237,7 +237,7 @@ func getConfig(c *gin.Context) {
 
 	rules, groups := parseConfigNode(&node)
 
-	// ДОБАВЛЯЕМ СИСТЕМНЫЕ ГРУППЫ, которых нет в секции proxy-groups
+	// ADD SYSTEM GROUPS that are not in the proxy-groups section
 	systemGroups := []string{"DIRECT", "REJECT", "PASS", "BLOCK"}
 	for _, sg := range systemGroups {
 		found := false
@@ -280,14 +280,14 @@ func parseConfigNode(node *yaml.Node) ([]Rule, []string) {
 
 		if keyNode.Value == "rules" {
 			for _, rNode := range valNode.Content {
-				// Обработка закомментированных правил в HeadComment
+				// Process commented rules in HeadComment
 				if rNode.HeadComment != "" {
 					lines := strings.Split(rNode.HeadComment, "\n")
 					for _, line := range lines {
 						cleanLine := strings.TrimSpace(line)
 						if strings.HasPrefix(cleanLine, "#") {
 							content := strings.TrimSpace(strings.TrimPrefix(cleanLine, "#"))
-							// Если строка внутри комментария похожа на правило (начинается с типа или - )
+							// If string inside comment looks like a rule (starts with type or - )
 							ruleRaw := strings.TrimPrefix(content, "- ")
 							if isLikelyRule(ruleRaw) {
 								rule := parseSingleRule(ruleRaw)
@@ -312,7 +312,7 @@ func parseConfigNode(node *yaml.Node) ([]Rule, []string) {
 }
 
 func isLikelyRule(s string) bool {
-	// Простая проверка, является ли строка правилом Clash
+	// Simple check if string is a Clash rule
 	types := []string{"DOMAIN", "GEOSITE", "GEOIP", "IP-CIDR", "MATCH", "OR", "AND", "NOT", "RULE-SET"}
 	for _, t := range types {
 		if strings.HasPrefix(s, t) {
@@ -327,7 +327,7 @@ func parseSingleRule(raw string) Rule {
 	parts := splitOutsideParentheses(trimmed)
 	rule := Rule{Raw: raw}
 
-	// Очищаем сегменты
+	// Clean segments
 	for i := range parts {
 		parts[i] = strings.TrimSpace(parts[i])
 	}
@@ -345,8 +345,8 @@ func parseSingleRule(raw string) Rule {
 		rule.ProxyGroup = parts[2]
 	default:
 		if len(parts) >= 4 {
-			// Кейс: GEOIP,private,DIRECT,no-resolve
-			// Берем только первые три части, no-resolve откидываем
+			// Case: GEOIP,private,DIRECT,no-resolve
+			// Take only first three parts, discard no-resolve
 			rule.Type = parts[0]
 			rule.Value = parts[1]
 			rule.ProxyGroup = parts[2]
@@ -377,7 +377,7 @@ func splitOutsideParentheses(s string) []string {
 }
 
 func saveRules(c *gin.Context) {
-	// Читаем тело запроса один раз
+	// Read request body once
 	bodyBytes, err := c.GetRawData()
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Failed to read request"})
@@ -389,9 +389,9 @@ func saveRules(c *gin.Context) {
 		ProxyGroups []string `json:"proxy_groups"`
 	}
 
-	// Пробуем новый формат
+	// Try new format
 	if err := json.Unmarshal(bodyBytes, &req); err != nil || len(req.Rules) == 0 {
-		// Если не вышло, пробуем старый формат (просто массив правил)
+		// If failed, try legacy format (just array of rules)
 		var legacyRules []Rule
 		if errLegacy := json.Unmarshal(bodyBytes, &legacyRules); errLegacy == nil {
 			req.Rules = legacyRules

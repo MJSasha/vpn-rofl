@@ -27,14 +27,14 @@
                         <div>
                             <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2 dark:text-white">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                <span class="hidden sm:inline">Mihomo Rules</span>
+                                <span class="hidden sm:inline">{{ t('title') }}</span>
                                 <span class="sm:hidden">Rules</span>
                             </h1>
                             <div class="flex items-center gap-3 mt-0.5 md:mt-1">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded dark:bg-slate-800">Manager</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded dark:bg-slate-800">{{ t('manager') }}</span>
                                 <div class="flex gap-2 text-[10px] font-bold uppercase tracking-tight">
-                                    <span class="text-slate-500">{{ rules.length }} <span class="text-slate-400">всего</span></span>
-                                    <span class="text-green-600">{{ activeCount }} <span class="text-slate-400">активно</span></span>
+                                    <span class="text-slate-500">{{ rules.length }} <span class="text-slate-400">{{ t('total') }}</span></span>
+                                    <span class="text-green-600">{{ activeCount }} <span class="text-slate-400">{{ t('active') }}</span></span>
                                 </div>
                             </div>
                         </div>
@@ -47,30 +47,36 @@
                                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                                     <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
                                 </span>
-                                Не сохранено
+                                {{ t('notSaved') }}
                             </div>
                         </transition>
 
+                        <button @click="toggleLang" 
+                                class="flex items-center justify-center w-10 h-10 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 font-bold text-[10px] uppercase"
+                                :title="lang === 'ru' ? 'English' : 'Русский'">
+                            {{ lang === 'ru' ? 'EN' : 'RU' }}
+                        </button>
+
                         <button @click="toggleTheme" 
                                 class="flex items-center justify-center w-10 h-10 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400"
-                                :title="isDark ? 'Светлая тема' : 'Темная тема'">
+                                :title="isDark ? t('lightTheme') : t('darkTheme')">
                             <svg v-if="!isDark" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                             <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.07" x2="5.64" y2="17.66"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                         </button>
 
                         <button @click="updateApp"
                                 class="bg-slate-800 hover:bg-black text-white px-3 md:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95 dark:bg-slate-700 dark:hover:bg-slate-600 dark:shadow-none"
-                                title="Обновить ПО">
+                                :title="t('update')">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            <span class="hidden sm:inline">Обновить</span>
+                            <span class="hidden sm:inline">{{ t('update') }}</span>
                         </button>
 
                         <button @click="saveConfig"
                                 :disabled="loading || !hasChanges"
                                 class="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:grayscale text-white px-3 md:px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-200 dark:shadow-none active:scale-95"
-                                title="Сохранить изменения">
+                                :title="t('save')">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                            <span class="hidden sm:inline">Сохранить</span>
+                            <span class="hidden sm:inline">{{ t('save') }}</span>
                         </button>
                     </div>
                 </div>
@@ -82,7 +88,7 @@
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
                         <input type="text" v-model="searchQuery"
-                               placeholder="Поиск..."
+                               :placeholder="t('search')"
                                class="block w-full pl-11 pr-10 h-[48px] border border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 shadow-sm transition-all text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder-slate-500">
                         <button v-if="searchQuery" @click="searchQuery = ''" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-slate-500">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -93,7 +99,7 @@
                         <div class="relative flex-grow min-w-[140px]">
                             <select v-model="selectedGroup"
                                     class="block w-full pl-4 pr-10 h-[48px] border border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 shadow-sm text-sm appearance-none cursor-pointer text-slate-600 font-bold dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
-                                <option value="">Все группы</option>
+                                <option value="">{{ t('allGroups') }}</option>
                                 <option v-for="g in proxyGroups" :key="g" :value="g">{{g}}</option>
                             </select>
                             <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
@@ -104,16 +110,16 @@
                         <button @click="addRule"
                                 class="flex-grow md:flex-shrink-0 flex items-center justify-center h-[48px] px-4 md:px-5 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-600 rounded-2xl shadow-sm transition-all text-sm font-black gap-2 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            <span class="md:hidden lg:inline">Правило</span>
+                            <span class="md:hidden lg:inline">{{ t('addRule') }}</span>
                         </button>
 
                         <div class="flex gap-2">
-                            <button @click="addGroup" title="Добавить группу"
+                            <button @click="addGroup" :title="t('addGroup')"
                                     class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                             </button>
 
-                            <button @click="fetchConfig" title="Обновить список"
+                            <button @click="fetchConfig" :title="t('refreshList')"
                                     class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
                             </button>
@@ -131,10 +137,10 @@
                         <thead class="bg-slate-50/80 border-b border-slate-100 dark:bg-slate-800/50 dark:border-slate-800 hidden md:table-header-group">
                             <tr class="text-slate-400 uppercase text-[10px] font-black tracking-widest dark:text-slate-500">
                                 <th class="px-4 py-4 w-12"></th>
-                                <th class="px-6 py-4 w-20">Вкл</th>
-                                <th class="px-6 py-4 w-40">Тип</th>
-                                <th class="px-6 py-4">Значение</th>
-                                <th class="px-6 py-4 w-44">Группа</th>
+                                <th class="px-6 py-4 w-20">{{ t('enabled') }}</th>
+                                <th class="px-6 py-4 w-40">{{ t('type') }}</th>
+                                <th class="px-6 py-4">{{ t('value') }}</th>
+                                <th class="px-6 py-4 w-44">{{ t('group') }}</th>
                                 <th class="px-6 py-4 w-16 text-center"></th>
                             </tr>
                         </thead>
@@ -209,10 +215,10 @@
 
                                     <!-- Value -->
                                     <td class="w-full md:w-auto md:table-cell p-0 md:px-6 md:py-4 mt-3 md:mt-0">
-                                        <div class="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Значение</div>
+                                        <div class="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">{{ t('value') }}</div>
                                         <div class="bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-xl dark:bg-slate-800/50 md:dark:bg-transparent">
                                             <template v-if="element.type === 'MATCH'">
-                                                <span class="text-[11px] font-bold text-slate-300 italic dark:text-slate-600">По умолчанию</span>
+                                                <span class="text-[11px] font-bold text-slate-300 italic dark:text-slate-600">{{ t('default') }}</span>
                                             </template>
                                             <input v-else type="text" v-model="element.value" @input="updateRawByRule(element)"
                                                    :placeholder="valuePlaceholders[element.type] || '...'"
@@ -222,7 +228,7 @@
 
                                     <!-- Proxy Group -->
                                     <td class="w-full md:w-44 md:table-cell p-0 md:px-6 md:py-4 mt-2 md:mt-0">
-                                        <div class="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Группа прокси</div>
+                                        <div class="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">{{ t('proxyGroup') }}</div>
                                         <select v-model="element.proxy_group" @change="updateRawByRule(element)" 
                                                 class="bg-blue-50/50 hover:bg-blue-100 text-[11px] font-black text-blue-600 cursor-pointer block w-full py-2 md:py-1.5 px-4 md:px-3 rounded-xl md:rounded-lg appearance-none transition-all dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40">
                                             <option v-for="g in proxyGroups" :key="g">{{g}}</option>
@@ -245,10 +251,10 @@
 
             <!-- Footer Stats -->
             <div class="mt-8 flex justify-between items-center px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <div>VPN ROFL v1.0</div>
+                <div>VPN ROFL v1.1.0</div>
                 <div v-if="hasChanges" class="text-blue-500 flex items-center gap-1 animate-pulse">
                     <div class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                    Есть несохраненные изменения
+                    {{ t('unsavedChanges') }}
                 </div>
             </div>
         </main>
@@ -258,7 +264,7 @@
             <div v-if="loading" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[200]">
                 <div class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200 dark:bg-slate-900 dark:shadow-none dark:border dark:border-slate-800">
                     <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="font-black text-slate-800 uppercase tracking-widest text-[10px] dark:text-slate-200">Загрузка...</p>
+                    <p class="font-black text-slate-800 uppercase tracking-widest text-[10px] dark:text-slate-200">{{ t('loading') }}</p>
                 </div>
             </div>
         </transition>
@@ -274,7 +280,7 @@
         <div class="fixed bottom-8 right-8 z-50">
             <button @click="scrollToBottom" 
                     class="flex items-center justify-center w-12 h-12 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-blue-400"
-                    title="Вниз">
+                    :title="t('scrollToBottom')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
         </div>
@@ -303,6 +309,74 @@
 
     <script>
         const { createApp } = Vue
+        
+        const locales = {
+            ru: {
+                title: 'Mihomo Rules',
+                manager: 'Manager',
+                total: 'всего',
+                active: 'активно',
+                notSaved: 'Не сохранено',
+                lightTheme: 'Светлая тема',
+                darkTheme: 'Темная тема',
+                update: 'Обновить',
+                save: 'Сохранить',
+                search: 'Поиск...',
+                allGroups: 'Все группы',
+                addRule: 'Правило',
+                addGroup: 'Добавить группу',
+                refreshList: 'Обновить список',
+                enabled: 'Вкл',
+                type: 'Тип',
+                value: 'Значение',
+                group: 'Группа',
+                default: 'По умолчанию',
+                proxyGroup: 'Группа прокси',
+                unsavedChanges: 'Есть несохраненные изменения',
+                loading: 'Загрузка...',
+                configLoaded: 'Конфигурация загружена',
+                updating: 'Обновление... Перезапуск через 3 сек.',
+                ruleAdded: 'Правило добавлено в конец списка',
+                groupNamePrompt: 'Название группы:',
+                deleteConfirm: 'Удалить?',
+                saveSuccess: 'Успешно сохранено и применено',
+                updateConfirm: 'Обновить ПО?',
+                scrollToBottom: 'Вниз'
+            },
+            en: {
+                title: 'Mihomo Rules',
+                manager: 'Manager',
+                total: 'total',
+                active: 'active',
+                notSaved: 'Not saved',
+                lightTheme: 'Light theme',
+                darkTheme: 'Dark theme',
+                update: 'Update',
+                save: 'Save',
+                search: 'Search...',
+                allGroups: 'All groups',
+                addRule: 'Rule',
+                addGroup: 'Add group',
+                refreshList: 'Refresh list',
+                enabled: 'On',
+                type: 'Type',
+                value: 'Value',
+                group: 'Group',
+                default: 'Default',
+                proxyGroup: 'Proxy group',
+                unsavedChanges: 'Unsaved changes',
+                loading: 'Loading...',
+                configLoaded: 'Configuration loaded',
+                updating: 'Updating... Restarting in 3 sec.',
+                ruleAdded: 'Rule added to the end of the list',
+                groupNamePrompt: 'Group name:',
+                deleteConfirm: 'Delete?',
+                saveSuccess: 'Successfully saved and applied',
+                updateConfirm: 'Update software?',
+                scrollToBottom: 'Scroll to bottom'
+            }
+        }
+
         createApp({
             components: {
                 draggable: window.vuedraggable
@@ -314,6 +388,7 @@
                     loading: false,
                     isScrolled: false,
                     isDark: false,
+                    lang: 'en',
                     searchQuery: '',
                     selectedGroup: '',
                     notification: '',
@@ -361,6 +436,13 @@
                 }
             },
             methods: {
+                t(key) {
+                    return locales[this.lang][key] || key
+                },
+                toggleLang() {
+                    this.lang = this.lang === 'ru' ? 'en' : 'ru'
+                    localStorage.setItem('lang', this.lang)
+                },
                 onDragEnd() {
                     this.hasChanges = true
                     this.ensureMatchAtEnd()
@@ -384,25 +466,25 @@
                             this.originalRulesJson = JSON.stringify(this.rules)
                             this.originalGroupsJson = JSON.stringify(this.proxyGroups)
                             this.hasChanges = false
-                            this.showNotify('Конфигурация загружена')
+                            this.showNotify(this.t('configLoaded'))
                         })
-                        .catch(err => alert('Ошибка: ' + err))
+                        .catch(err => alert('Error: ' + err))
                         .finally(() => this.loading = false)
                 },
                 updateApp() {
-                    if (!confirm('Обновить ПО?')) return
+                    if (!confirm(this.t('updateConfirm'))) return
                     this.loading = true
                     fetch('/api/update', { method: 'POST' })
                         .then(async res => {
                             const data = await res.json()
                             if (res.ok) {
-                                this.showNotify('Обновление... Перезапуск через 3 сек.')
+                                this.showNotify(this.t('updating'))
                                 setTimeout(() => location.reload(), 3000)
                             } else {
-                                alert('Ошибка: ' + data.error)
+                                alert('Error: ' + data.error)
                             }
                         })
-                        .catch(err => alert('Ошибка: ' + err))
+                        .catch(err => alert('Error: ' + err))
                         .finally(() => this.loading = false)
                 },
                 ensureMatchAtEnd() {
@@ -411,7 +493,7 @@
                     this.rules = [...others, ...matches]
                 },
                 addRule() {
-                    // Очищаем фильтры, чтобы увидеть новое правило
+                    // Clear filters to see new rule
                     this.searchQuery = ''
                     this.selectedGroup = ''
 
@@ -427,7 +509,7 @@
                     }
                     this.updateRawByRule(newRule)
                     
-                    // Добавляем перед MATCH (или в конец, если MATCH нет)
+                    // Add before MATCH (or at end if no MATCH)
                     const matchIdx = this.rules.findIndex(r => r.type === 'MATCH')
                     if (matchIdx !== -1) {
                         this.rules.splice(matchIdx, 0, newRule)
@@ -435,20 +517,19 @@
                         this.rules.push(newRule)
                     }
                     
-                    this.showNotify('Правило добавлено в конец списка')
+                    this.showNotify(this.t('ruleAdded'))
                     
-                    // Убираем подсветку через некоторое время
+                    // Remove highlight after some time
                     setTimeout(() => {
                         newRule.isNew = false
                     }, 5000)
 
-                    // Скроллим вниз и фокусимся на поле ввода
+                    // Scroll down and focus input
                     this.$nextTick(() => {
                         this.scrollToBottom()
-                        // Находим инпут в последней строке (или перед MATCH)
                         setTimeout(() => {
                             const rows = document.querySelectorAll('table tbody tr')
-                            const matchRowIdx = Array.from(rows).findIndex(row => row.innerText.includes('По умолчанию'))
+                            const matchRowIdx = Array.from(rows).findIndex(row => row.innerText.includes(this.t('default')))
                             const targetRow = matchRowIdx !== -1 ? rows[matchRowIdx - 1] : rows[rows.length - 1]
                             if (targetRow) {
                                 const input = targetRow.querySelector('td:nth-child(4) input')
@@ -458,17 +539,17 @@
                     })
                 },
                 addGroup() {
-                    const name = prompt('Название группы:')
+                    const name = prompt(this.t('groupNamePrompt'))
                     if (name && name.trim()) {
                         const n = name.trim()
                         if (!this.proxyGroups.includes(n)) {
                             this.proxyGroups.push(n)
-                            this.showNotify('Группа добавлена')
+                            this.showNotify(this.t('addGroup'))
                         }
                     }
                 },
                 removeRule(rule) {
-                    if (confirm('Удалить?')) {
+                    if (confirm(this.t('deleteConfirm'))) {
                         const idx = this.rules.findIndex(r => r.id === rule.id)
                         if (idx !== -1) this.rules.splice(idx, 1)
                     }
@@ -502,16 +583,26 @@
                             this.originalRulesJson = JSON.stringify(this.rules)
                             this.originalGroupsJson = JSON.stringify(this.proxyGroups)
                             this.hasChanges = false
-                            this.showNotify('Успешно сохранено и применено')
+                            this.showNotify(this.t('saveSuccess'))
                         } else {
                             const d = await res.json()
-                            alert('Ошибка: ' + d.error)
+                            alert('Error: ' + d.error)
                         }
-                    } catch (err) { alert('Ошибка: ' + err) }
+                    } catch (err) { alert('Error: ' + err) }
                     finally { this.loading = false }
                 }
             },
             mounted() {
+                const savedLang = localStorage.getItem('lang')
+                if (savedLang) {
+                    this.lang = savedLang
+                } else {
+                    const browserLang = navigator.language || navigator.userLanguage
+                    if (browserLang.startsWith('ru')) {
+                        this.lang = 'ru'
+                    }
+                }
+
                 this.fetchConfig()
                 const savedTheme = localStorage.getItem('theme')
                 if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {

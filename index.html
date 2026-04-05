@@ -276,13 +276,23 @@
             </div>
         </transition>
 
-        <!-- Scroll Bottom Button -->
-        <div class="fixed bottom-8 right-8 z-50">
-            <button @click="scrollToBottom" 
-                    class="flex items-center justify-center w-12 h-12 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-blue-400"
-                    :title="t('scrollToBottom')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
+        <!-- Scroll Navigation Buttons -->
+        <div class="fixed bottom-8 right-8 z-50 flex flex-col gap-3">
+            <transition name="fade">
+                <button v-show="!isAtTop" @click="scrollToTop" 
+                        class="flex items-center justify-center w-12 h-12 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-blue-400"
+                        :title="t('scrollToTop')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                </button>
+            </transition>
+            
+            <transition name="fade">
+                <button v-show="!isAtBottom" @click="scrollToBottom" 
+                        class="flex items-center justify-center w-12 h-12 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-blue-400"
+                        :title="t('scrollToBottom')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+            </transition>
         </div>
     </div>
 
@@ -341,7 +351,8 @@
                 deleteConfirm: 'Удалить?',
                 saveSuccess: 'Успешно сохранено и применено',
                 updateConfirm: 'Обновить ПО?',
-                scrollToBottom: 'Вниз'
+                scrollToBottom: 'Вниз',
+                scrollToTop: 'Вверх'
             },
             en: {
                 title: 'Mihomo Rules',
@@ -373,7 +384,8 @@
                 deleteConfirm: 'Delete?',
                 saveSuccess: 'Successfully saved and applied',
                 updateConfirm: 'Update software?',
-                scrollToBottom: 'Scroll to bottom'
+                scrollToBottom: 'Scroll to bottom',
+                scrollToTop: 'Scroll to top'
             }
         }
 
@@ -387,6 +399,8 @@
                     proxyGroups: [],
                     loading: false,
                     isScrolled: false,
+                    isAtTop: true,
+                    isAtBottom: false,
                     isDark: false,
                     lang: 'en',
                     searchQuery: '',
@@ -409,7 +423,9 @@
             },
             watch: {
                 rules: { handler() { this.checkChanges() }, deep: true },
-                proxyGroups: { handler() { this.checkChanges() }, deep: true }
+                proxyGroups: { handler() { this.checkChanges() }, deep: true },
+                searchQuery() { this.$nextTick(() => { this.handleScroll() }) },
+                selectedGroup() { this.$nextTick(() => { this.handleScroll() }) }
             },
             computed: {
                 activeCount() { return this.rules.filter(r => r.enabled).length },
@@ -467,6 +483,7 @@
                             this.originalGroupsJson = JSON.stringify(this.proxyGroups)
                             this.hasChanges = false
                             this.showNotify(this.t('configLoaded'))
+                            this.$nextTick(() => { this.handleScroll() })
                         })
                         .catch(err => alert('Error: ' + err))
                         .finally(() => this.loading = false)
@@ -562,8 +579,16 @@
                         rule.raw = `${rule.type},${val}${rule.proxy_group}`
                     }
                 },
+                handleScroll() {
+                    this.isScrolled = window.scrollY > 20
+                    this.isAtTop = window.scrollY < 50
+                    this.isAtBottom = (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 50)
+                },
                 scrollToBottom() {
-                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+                    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })
+                },
+                scrollToTop() {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
                 },
                 toggleTheme() {
                     this.isDark = !this.isDark
@@ -609,7 +634,11 @@
                     this.isDark = true
                     document.documentElement.classList.add('dark')
                 }
-                window.addEventListener('scroll', () => { this.isScrolled = window.scrollY > 20 })
+                
+                window.addEventListener('scroll', this.handleScroll)
+                // Initial check
+                this.handleScroll()
+                
                 window.addEventListener('keydown', (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); this.saveConfig() }
                 })

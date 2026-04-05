@@ -26,7 +26,7 @@ var f embed.FS
 
 const (
 	githubRepo = "MJSasha/vpn-rofl"
-	version    = "v1.1.0" // Current version
+	version    = "v1.2.0" // Current version
 )
 
 type Rule struct {

@@ -5,10 +5,11 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -22,6 +23,11 @@ import (
 
 //go:embed index.html
 var f embed.FS
+
+const (
+	githubRepo = "MJSasha/vpn-rofl"
+	version    = "v1.0.0" // Current version
+)
 
 type Rule struct {
 	ID         int    `json:"id"`
@@ -78,49 +84,118 @@ func main() {
 }
 
 func updateApp(c *gin.Context) {
-	log.Println("📥 Запуск обновления...")
+	log.Println("📥 Запуск обновления через GitHub Releases...")
 
-	// 1. Git pull
-	cmdPull := exec.Command("git", "pull")
-	outputPull, err := cmdPull.CombinedOutput()
+	// 1. Get latest release info from GitHub
+	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", githubRepo))
 	if err != nil {
-		log.Printf("❌ Git pull failed: %v, Output: %s", err, string(outputPull))
-		c.JSON(500, gin.H{"error": "Git pull failed: " + err.Error(), "output": string(outputPull)})
+		c.JSON(500, gin.H{"error": "Failed to fetch latest release: " + err.Error()})
 		return
 	}
-	log.Println("✅ Git pull выполнен успешно")
+	defer resp.Body.Close()
 
-	// 2. Build
-	// Используем имя текущего исполняемого файла для сборки
-	exe, _ := os.Executable()
-	cmdBuild := exec.Command("go", "build", "-o", exe, "main.go")
-	outputBuild, err := cmdBuild.CombinedOutput()
-	if err != nil {
-		log.Printf("❌ Build failed: %v, Output: %s", err, string(outputBuild))
-		c.JSON(500, gin.H{"error": "Build failed: " + err.Error(), "output": string(outputBuild)})
+	var release struct {
+		TagName string `json:"tag_name"`
+		Assets  []struct {
+			Name               string `json:"name"`
+			BrowserDownloadURL string `json:"browser_download_url"`
+		} `json:"assets"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		c.JSON(500, gin.H{"error": "Failed to decode release info: " + err.Error()})
 		return
 	}
-	log.Println("✅ Приложение пересобрано")
 
-	c.JSON(200, gin.H{"status": "Update successful, restarting..."})
+	if release.TagName == version {
+		c.JSON(200, gin.H{"status": "Already on the latest version", "version": version})
+		return
+	}
 
-	// 3. Restart (с небольшой задержкой, чтобы отправить ответ клиенту)
+	// 2. Find matching asset (binary)
+	var downloadURL string
+	// Search for asset matching GOOS and GOARCH
+	expectedAsset := fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)
+	for _, asset := range release.Assets {
+		assetLower := strings.ToLower(asset.Name)
+		if strings.Contains(assetLower, expectedAsset) ||
+			(runtime.GOOS == "linux" && strings.Contains(assetLower, "linux") && strings.Contains(assetLower, runtime.GOARCH)) {
+			downloadURL = asset.BrowserDownloadURL
+			break
+		}
+	}
+
+	if downloadURL == "" {
+		// Second attempt: just any binary if we can't find a perfect match
+		for _, asset := range release.Assets {
+			assetLower := strings.ToLower(asset.Name)
+			if !strings.HasSuffix(assetLower, ".zip") && 
+				!strings.HasSuffix(assetLower, ".tar.gz") && 
+				!strings.HasSuffix(assetLower, ".txt") &&
+				!strings.HasSuffix(assetLower, ".md") &&
+				!strings.HasSuffix(assetLower, ".yaml") {
+				downloadURL = asset.BrowserDownloadURL
+				break
+			}
+		}
+	}
+
+	if downloadURL == "" {
+		c.JSON(500, gin.H{"error": "No suitable binary found in the latest release"})
+		return
+	}
+
+	// 3. Download the new binary
+	log.Printf("📂 Скачивание: %s", downloadURL)
+	resp, err = http.Get(downloadURL)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to download update: " + err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+
+	exe, err := os.Executable()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to get executable path: " + err.Error()})
+		return
+	}
+
+	// Create a temporary file for the new binary
+	tmpPath := exe + ".tmp"
+	f, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to create temp file: " + err.Error()})
+		return
+	}
+
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		f.Close()
+		os.Remove(tmpPath)
+		c.JSON(500, gin.H{"error": "Failed to save update: " + err.Error()})
+		return
+	}
+	f.Close()
+
+	// 4. Swap binaries
+	// On Linux/Unix we can rename even if the file is busy (running)
+	if err := os.Rename(tmpPath, exe); err != nil {
+		c.JSON(500, gin.H{"error": "Failed to replace binary: " + err.Error()})
+		return
+	}
+
+	log.Println("✅ Обновление скачано и заменено")
+	c.JSON(200, gin.H{"status": "Update successful, restarting...", "new_version": release.TagName})
+
+	// 5. Restart
 	go func() {
 		time.Sleep(2 * time.Second)
 		log.Println("🔄 Перезапуск приложения...")
-
-		// Получаем путь к текущему запущенному файлу
-		exe, err := os.Executable()
-		if err != nil {
-			exe = "./main" // fallback
-		}
-
 		err = syscall.Exec(exe, os.Args, os.Environ())
 		if err != nil {
 			log.Fatalf("❌ Ошибка при перезапуске (syscall.Exec): %v", err)
 		}
 	}()
 }
+
 
 func getSSHClient() (*ssh.Client, error) {
 	config := &ssh.ClientConfig{

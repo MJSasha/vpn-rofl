@@ -20,16 +20,17 @@
         <!-- Sticky Header Area -->
         <header class="sticky top-0 z-[100] bg-slate-50/90 backdrop-blur-md border-b border-transparent transition-all duration-300 dark:bg-slate-950/90"
                 :class="{'border-slate-200 shadow-sm bg-white/95 dark:bg-slate-900/95 dark:border-slate-800': isScrolled}">
-            <div class="container mx-auto px-4 md:px-8 max-w-4xl py-4 flex flex-col gap-6">
+            <div class="container mx-auto px-4 md:px-8 max-w-4xl py-3 md:py-4 flex flex-col gap-4 md:gap-6">
                 <!-- Top Row: Title & Actions -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div class="flex items-center gap-6">
                         <div>
-                            <h1 class="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2 dark:text-white">
+                            <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2 dark:text-white">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                Mihomo Rules
+                                <span class="hidden sm:inline">Mihomo Rules</span>
+                                <span class="sm:hidden">Rules</span>
                             </h1>
-                            <div class="flex items-center gap-3 mt-1">
+                            <div class="flex items-center gap-3 mt-0.5 md:mt-1">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded dark:bg-slate-800">Manager</span>
                                 <div class="flex gap-2 text-[10px] font-bold uppercase tracking-tight">
                                     <span class="text-slate-500">{{ rules.length }} <span class="text-slate-400">всего</span></span>
@@ -41,7 +42,7 @@
 
                     <div class="flex items-center gap-2">
                         <transition name="fade">
-                            <div v-if="hasChanges" class="hidden sm:flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-wider bg-blue-50 px-3 py-2 rounded-xl border border-blue-100 shadow-sm dark:bg-blue-900/20 dark:border-blue-800">
+                            <div v-if="hasChanges" class="hidden lg:flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-wider bg-blue-50 px-3 py-2 rounded-xl border border-blue-100 shadow-sm dark:bg-blue-900/20 dark:border-blue-800">
                                 <span class="relative flex h-2 w-2">
                                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                                     <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
@@ -58,16 +59,18 @@
                         </button>
 
                         <button @click="updateApp"
-                                class="bg-slate-800 hover:bg-black text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95 dark:bg-slate-700 dark:hover:bg-slate-600 dark:shadow-none">
+                                class="bg-slate-800 hover:bg-black text-white px-3 md:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95 dark:bg-slate-700 dark:hover:bg-slate-600 dark:shadow-none"
+                                title="Обновить ПО">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            Обновить ПО
+                            <span class="hidden sm:inline">Обновить</span>
                         </button>
 
                         <button @click="saveConfig"
                                 :disabled="loading || !hasChanges"
-                                class="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:grayscale text-white px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-200 dark:shadow-none active:scale-95">
+                                class="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:grayscale text-white px-3 md:px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-200 dark:shadow-none active:scale-95"
+                                title="Сохранить изменения">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                            Сохранить
+                            <span class="hidden sm:inline">Сохранить</span>
                         </button>
                     </div>
                 </div>
@@ -79,17 +82,17 @@
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
                         <input type="text" v-model="searchQuery"
-                               placeholder="Поиск по правилам..."
+                               placeholder="Поиск..."
                                class="block w-full pl-11 pr-10 h-[48px] border border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 shadow-sm transition-all text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder-slate-500">
                         <button v-if="searchQuery" @click="searchQuery = ''" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-slate-500">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
 
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <div class="relative flex-grow md:flex-grow-0">
+                    <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto">
+                        <div class="relative flex-grow min-w-[140px]">
                             <select v-model="selectedGroup"
-                                    class="block w-full md:w-[180px] pl-4 pr-10 h-[48px] border border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 shadow-sm text-sm appearance-none cursor-pointer text-slate-600 font-bold dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
+                                    class="block w-full pl-4 pr-10 h-[48px] border border-slate-200 rounded-2xl bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 shadow-sm text-sm appearance-none cursor-pointer text-slate-600 font-bold dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
                                 <option value="">Все группы</option>
                                 <option v-for="g in proxyGroups" :key="g" :value="g">{{g}}</option>
                             </select>
@@ -99,20 +102,22 @@
                         </div>
 
                         <button @click="addRule"
-                                class="flex-shrink-0 flex items-center justify-center h-[48px] px-5 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-600 rounded-2xl shadow-sm transition-all text-sm font-black gap-2 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400">
+                                class="flex-grow md:flex-shrink-0 flex items-center justify-center h-[48px] px-4 md:px-5 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-600 rounded-2xl shadow-sm transition-all text-sm font-black gap-2 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            Правило
+                            <span class="md:hidden lg:inline">Правило</span>
                         </button>
 
-                        <button @click="addGroup" title="Добавить группу"
-                                class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                        </button>
+                        <div class="flex gap-2">
+                            <button @click="addGroup" title="Добавить группу"
+                                    class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                            </button>
 
-                        <button @click="fetchConfig" title="Обновить список"
-                                class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
-                        </button>
+                            <button @click="fetchConfig" title="Обновить список"
+                                    class="flex-shrink-0 flex items-center justify-center w-[48px] h-[48px] bg-white border border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -122,8 +127,8 @@
             <!-- Rules Table -->
             <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden dark:bg-slate-900 dark:border-slate-800 dark:shadow-none">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse table-fixed">
-                        <thead class="bg-slate-50/80 border-b border-slate-100 dark:bg-slate-800/50 dark:border-slate-800">
+                    <table class="w-full text-left border-collapse md:table-fixed block md:table">
+                        <thead class="bg-slate-50/80 border-b border-slate-100 dark:bg-slate-800/50 dark:border-slate-800 hidden md:table-header-group">
                             <tr class="text-slate-400 uppercase text-[10px] font-black tracking-widest dark:text-slate-500">
                                 <th class="px-4 py-4 w-12"></th>
                                 <th class="px-6 py-4 w-20">Вкл</th>
@@ -135,7 +140,7 @@
                         </thead>
                         <draggable v-model="draggableRules" 
                                    tag="tbody" 
-                                   class="divide-y divide-slate-50 dark:divide-slate-800" 
+                                   class="divide-y divide-slate-50 dark:divide-slate-800 block md:table-row-group" 
                                    handle=".drag-handle" 
                                    item-key="id" 
                                    @end="onDragEnd"
@@ -143,21 +148,48 @@
                                    :animation="200"
                                    ghost-class="ghost">
                             <template #item="{element}">
-                                <tr class="group hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-800/50"
+                                <tr class="group hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-800/50 flex flex-wrap md:table-row p-4 md:p-0 border-b md:border-b-0 relative"
                                     :class="{'opacity-50 grayscale-[0.5]': !element.enabled, 'bg-blue-50/50 dark:bg-blue-900/20 ring-1 ring-blue-500/30 ring-inset new-rule-pulse': element.isNew}">
-                                    <td class="px-4 py-4">
+                                    
+                                    <!-- Mobile Drag & Type -->
+                                    <td class="w-2/3 md:w-12 md:table-cell p-0 md:px-4 md:py-4 flex items-center gap-3">
                                         <div class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-blue-500 transition-colors dark:text-slate-600 dark:hover:text-blue-400"
                                              v-if="element.type !== 'MATCH' && !searchQuery && !selectedGroup">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
                                         </div>
+                                        <div class="md:hidden flex-grow">
+                                            <select v-model="element.type" @change="updateRawByRule(element)"
+                                                    class="bg-slate-100 hover:bg-slate-200 border-none text-[11px] font-black text-slate-600 cursor-pointer block w-full py-2 px-3 rounded-lg appearance-none transition-all dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700">
+                                                <option>DOMAIN-SUFFIX</option>
+                                                <option>DOMAIN-KEYWORD</option>
+                                                <option>DOMAIN</option>
+                                                <option>IP-CIDR</option>
+                                                <option>GEOIP</option>
+                                                <option>GEOSITE</option>
+                                                <option>IP-ASN</option>
+                                                <option>RULE-SET</option>
+                                                <option>AND</option>
+                                                <option>OR</option>
+                                                <option>MATCH</option>
+                                                <option>OTHER</option>
+                                            </select>
+                                        </div>
                                     </td>
-                                    <td class="px-6 py-4">
+
+                                    <!-- Mobile Toggle & Delete -->
+                                    <td class="w-1/3 md:w-20 md:table-cell p-0 md:px-6 md:py-4 flex justify-end items-center gap-3">
                                         <label class="relative inline-flex items-center cursor-pointer">
                                             <input type="checkbox" v-model="element.enabled" class="sr-only peer">
                                             <div class="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 dark:bg-slate-700"></div>
                                         </label>
+                                        <button @click="removeRule(element)" 
+                                                class="md:hidden text-slate-300 hover:text-red-500 transition-all p-2 rounded-lg hover:bg-red-50 dark:text-slate-700 dark:hover:bg-red-900/20">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                        </button>
                                     </td>
-                                    <td class="px-6 py-4">
+
+                                    <!-- Desktop Type -->
+                                    <td class="hidden md:table-cell px-6 py-4 w-40">
                                         <select v-model="element.type" @change="updateRawByRule(element)"
                                                 class="bg-slate-100 hover:bg-slate-200 border-none text-[11px] font-black text-slate-600 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700">
                                             <option>DOMAIN-SUFFIX</option>
@@ -174,21 +206,31 @@
                                             <option>OTHER</option>
                                         </select>
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <template v-if="element.type === 'MATCH'">
-                                            <span class="text-[11px] font-bold text-slate-300 italic dark:text-slate-600">По умолчанию</span>
-                                        </template>
-                                        <input v-else type="text" v-model="element.value" @input="updateRawByRule(element)"
-                                               :placeholder="valuePlaceholders[element.type] || '...'"
-                                               class="w-full bg-transparent border-none text-sm focus:ring-0 p-0 text-slate-600 placeholder-slate-200 font-medium dark:text-slate-300 dark:placeholder-slate-700">
+
+                                    <!-- Value -->
+                                    <td class="w-full md:w-auto md:table-cell p-0 md:px-6 md:py-4 mt-3 md:mt-0">
+                                        <div class="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Значение</div>
+                                        <div class="bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-xl dark:bg-slate-800/50 md:dark:bg-transparent">
+                                            <template v-if="element.type === 'MATCH'">
+                                                <span class="text-[11px] font-bold text-slate-300 italic dark:text-slate-600">По умолчанию</span>
+                                            </template>
+                                            <input v-else type="text" v-model="element.value" @input="updateRawByRule(element)"
+                                                   :placeholder="valuePlaceholders[element.type] || '...'"
+                                                   class="w-full bg-transparent border-none text-sm focus:ring-0 p-0 text-slate-600 placeholder-slate-200 font-medium dark:text-slate-300 dark:placeholder-slate-700">
+                                        </div>
                                     </td>
-                                    <td class="px-6 py-4">
+
+                                    <!-- Proxy Group -->
+                                    <td class="w-full md:w-44 md:table-cell p-0 md:px-6 md:py-4 mt-2 md:mt-0">
+                                        <div class="md:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Группа прокси</div>
                                         <select v-model="element.proxy_group" @change="updateRawByRule(element)" 
-                                                class="bg-blue-50/50 hover:bg-blue-100 text-[11px] font-black text-blue-600 cursor-pointer block w-full py-1.5 px-3 rounded-lg appearance-none transition-all dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40">
+                                                class="bg-blue-50/50 hover:bg-blue-100 text-[11px] font-black text-blue-600 cursor-pointer block w-full py-2 md:py-1.5 px-4 md:px-3 rounded-xl md:rounded-lg appearance-none transition-all dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40">
                                             <option v-for="g in proxyGroups" :key="g">{{g}}</option>
                                         </select>
                                     </td>
-                                    <td class="px-6 py-4 text-center">
+
+                                    <!-- Desktop Delete -->
+                                    <td class="hidden md:table-cell px-6 py-4 w-16 text-center">
                                         <button @click="removeRule(element)" 
                                                 class="text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2 rounded-lg hover:bg-red-50 dark:text-slate-700 dark:hover:bg-red-900/20">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
